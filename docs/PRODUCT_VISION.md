@@ -523,33 +523,28 @@ Tags
 
 Flint has a cold start risk.
 
-A personal historical memory system becomes more valuable as records accumulate.
+A personal historical memory system becomes more valuable as records accumulate. However, Flint should avoid solving cold start by becoming a content product too early.
 
-To reduce the cold start problem, Flint may include:
+The early cold start solution should be a small set of beautifully crafted example records, not large curated content packs.
 
-- A small curated starter pack
-- Example records
-- Example Sparks
-- Suggested prompts
-- “Today I learned” style capture
-- Import from user notes later
+Example records should show what a good Flint record feels like:
 
-Starter packs should be small and curated.
+Short
+Precise
+Absorbable
+Time-anchored
+Place-aware
+Personal-learning friendly
+Not Wikipedia-length
+Not citation-heavy
 
-Do not try to preload all of history.
+The purpose of example content is to teach the record style, not to preload history.
 
-Possible starter packs:
+Later, Flint may support optional curated collections or shared starting points, but this should not distort the early product.
 
-- Roman Republic
-- World War I
-- Age of Exploration
-- Philippine Revolution
-- New Zealand history
-- Silk Road
-- Ancient tools and materials
-- Empires and trade routes
+The goal is to demonstrate the feeling of Flint:
 
-The goal of starter content is to demonstrate the feeling of Flint, not to become an encyclopedia.
+A small record, clearly captured, that may become meaningful later.
 
 ---
 
@@ -663,7 +658,36 @@ Let sparks emerge.
 
 ---
 
-## 18. Non-Negotiable Principles
+## 18. Sharing Philosophy
+
+Flint is personal-first.
+
+A user’s Flint should feel like their own notebook, memory system, and learning archive. The product should not assume collaboration, shared editing, team workspaces, comments, permissions, or real-time co-authoring.
+
+However, Flint may eventually support deliberate one-way sharing.
+
+Sharing in Flint should feel less like collaboration and more like handing someone a curated notebook, reading trail, or copied set of index cards.
+
+A possible future sharing model:
+
+A user creates a Collection from their own records
+The user exports or shares that Collection
+Another person imports it into their own Flint
+The imported records become their own copy
+They can edit, delete, expand, and diverge from it freely
+There is no live sync between the original and imported version
+
+This is closer to forking than collaboration.
+
+The original Flint remains personal. The shared copy becomes someone else’s starting point.
+
+Principle:
+
+Flint is personal-first. Sharing is always a deliberate, one-way act.
+
+---
+
+## 19. Non-Negotiable Principles
 
 1. Flint helps you collect small sparks of history until something catches fire.
 2. The record is the atomic unit of Flint.
@@ -680,6 +704,7 @@ Let sparks emerge.
 13. Do not build Wikipedia.
 14. Do not over-structure the capture experience.
 15. Structured underneath. Effortless on the surface.
+16. Flint is personal-first. Build nothing that assumes collaboration. Sharing is always deliberate and one-way.
 
 ---
 
