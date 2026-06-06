@@ -17,20 +17,7 @@ export default async function AddPage() {
         ]}
       />
 
-      <section aria-labelledby="add-heading">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-stone-soft">
-          Add
-        </p>
-        <h1 id="add-heading" className="mt-3 font-serif text-3xl text-obsidian">
-          One small thing worth remembering.
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-stone-warm">
-          Capture it quickly. Flint keeps you here so the next note is ready.
-        </p>
-        <div className="mt-6">
-          <CaptureBox />
-        </div>
-      </section>
+      <CaptureBox />
     </main>
     <BottomNav />
     </>
