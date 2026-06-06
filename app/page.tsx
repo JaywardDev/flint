@@ -1,48 +1,34 @@
 import Link from "next/link";
 
-import type { FlintRecord } from "@/lib/flint-records";
+import { requireUser } from "@/lib/auth/server";
+import { searchFlintRecords } from "@/lib/flint-records";
+import type { FlintSupabaseClient } from "@/lib/flint-records";
+import { createClient } from "@/lib/supabase/server";
+
+import { SignOutButton } from "./sign-out-button";
 
 type ListPageProps = {
   searchParams: Promise<{ q?: string }>;
 };
 
-const records: FlintRecord[] = [];
-
-function includesQuery(value: string | null, query: string) {
-  return value?.toLowerCase().includes(query) ?? false;
-}
-
-function searchRecords(query: string) {
-  if (!query) return records;
-
-  return records.reduce<FlintRecord[]>((matches, record) => {
-    if (
-      includesQuery(record.type, query) ||
-      includesQuery(record.title, query) ||
-      includesQuery(record.summary, query) ||
-      includesQuery(record.when, query) ||
-      includesQuery(record.where, query)
-    ) {
-      matches.push(record);
-    }
-
-    return matches;
-  }, []);
-}
-
 export default async function ListPage({ searchParams }: ListPageProps) {
+  const user = await requireUser();
+  const supabase = await createClient();
+  const recordsClient = supabase as unknown as FlintSupabaseClient;
   const params = await searchParams;
   const queryValue = params.q ?? "";
-  const query = queryValue.trim().toLowerCase();
-  const visibleRecords = searchRecords(query);
+  const visibleRecords = await searchFlintRecords(recordsClient, user.id, queryValue);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <header className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
-            Flint
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+              Flint
+            </p>
+            <SignOutButton />
+          </div>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-950">
             Records
           </h1>
