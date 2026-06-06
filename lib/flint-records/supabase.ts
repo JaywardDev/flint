@@ -38,6 +38,35 @@ export interface FlintSupabaseClient {
 const RECORD_COLUMNS =
   "id,user_id,type,title,summary,when,start_year,end_year,where,created_at,updated_at";
 
+function parsedYearColumns(when: string | null | undefined) {
+  const yearRange = typeof when === "string" ? parseFlintYearRange(when) : null;
+
+  return {
+    start_year: yearRange?.startYear ?? null,
+    end_year: yearRange?.endYear ?? null,
+  };
+}
+
+function withParsedCreateWhenRange(
+  input: CreateFlintRecordInput,
+): CreateFlintRecordInput {
+  return {
+    ...input,
+    ...parsedYearColumns(input.when),
+  };
+}
+
+function withParsedUpdateWhenRange(
+  input: UpdateFlintRecordInput,
+): UpdateFlintRecordInput {
+  if (!("when" in input)) return input;
+
+  return {
+    ...input,
+    ...parsedYearColumns(input.when),
+  };
+}
+
 function escapeSearchTerm(searchQuery: string): string {
   return searchQuery.replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
@@ -49,7 +78,7 @@ export async function createFlintRecord(
 ): Promise<FlintRecord> {
   const { data, error } = await supabase
     .from("records")
-    .insert({ ...input, user_id: userId })
+    .insert({ ...withParsedCreateWhenRange(input), user_id: userId })
     .select(RECORD_COLUMNS)
     .single();
 
@@ -65,7 +94,7 @@ export async function updateFlintRecord(
 ): Promise<FlintRecord> {
   const { data, error } = await supabase
     .from("records")
-    .update(input)
+    .update(withParsedUpdateWhenRange(input))
     .eq("user_id", userId)
     .eq("id", id)
     .select(RECORD_COLUMNS)
