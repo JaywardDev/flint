@@ -21,9 +21,9 @@ export function SignOutButton() {
       type="button"
       onClick={signOut}
       disabled={isSigningOut}
-      className="text-sm font-medium text-stone-600 transition hover:text-stone-950 disabled:cursor-not-allowed disabled:text-stone-400"
+      className="text-sm font-medium text-stone-warm transition hover:text-obsidian disabled:cursor-not-allowed disabled:text-stone-soft"
     >
-      {isSigningOut ? "Signing out" : "Sign out"}
+      {isSigningOut ? "Signing out…" : "Sign out"}
     </button>
   );
 }

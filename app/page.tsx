@@ -1,11 +1,12 @@
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth/server";
-import { searchFlintRecords } from "@/lib/flint-records";
+import { searchFlintRecords, FLINT_RECORD_TYPE_LABELS } from "@/lib/flint-records";
 import type { FlintSupabaseClient } from "@/lib/flint-records";
 import { createClient } from "@/lib/supabase/server";
 
 import { SignOutButton } from "./sign-out-button";
+import { Wordmark } from "./wordmark";
 
 type ListPageProps = {
   searchParams: Promise<{ q?: string }>;
@@ -21,30 +22,28 @@ export default async function ListPage({ searchParams }: ListPageProps) {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
-      <header className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex items-center gap-4">
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
-              Flint
-            </p>
-            <SignOutButton />
-          </div>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-950">
-            Records
-          </h1>
-          <p className="mt-3 max-w-xl text-base leading-7 text-stone-600">
-            A simple notebook of people, events, places, objects, and notes.
-          </p>
+      <header className="mb-10">
+        <div className="flex items-center justify-between">
+          <Wordmark className="text-sm" />
+          <SignOutButton />
         </div>
-        <Link
-          href="/add"
-          className="inline-flex items-center justify-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
-        >
-          Add record
-        </Link>
+        <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="font-serif text-4xl text-obsidian">Records</h1>
+            <p className="mt-3 max-w-xl text-base leading-7 text-stone-warm">
+              A quiet notebook of people, events, places, objects, and notes.
+            </p>
+          </div>
+          <Link
+            href="/add"
+            className="inline-flex items-center justify-center rounded-full bg-obsidian px-5 py-3 text-sm font-semibold text-parchment transition hover:bg-obsidian/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 focus-visible:ring-offset-parchment"
+          >
+            Add record
+          </Link>
+        </div>
       </header>
 
-      <form className="mb-6" role="search">
+      <form className="mb-8" role="search">
         <label htmlFor="q" className="sr-only">
           Search records
         </label>
@@ -54,24 +53,20 @@ export default async function ListPage({ searchParams }: ListPageProps) {
           type="search"
           defaultValue={queryValue}
           placeholder="Search records"
-          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-stone-400"
+          className="w-full rounded-xl border border-parchment-border bg-parchment-raised px-4 py-2.5 text-sm text-obsidian outline-none transition placeholder:text-stone-soft focus:border-ember focus:ring-1 focus:ring-ember"
         />
       </form>
 
       <section className="flex flex-col gap-3" aria-label="Records">
         {visibleRecords.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-stone-300 bg-white p-8 text-center">
-            <h2 className="text-xl font-semibold text-stone-950">
-              No records yet
-            </h2>
-            <p className="mt-3 text-stone-600">
-              Add the first record when something is worth remembering.
-            </p>
+          <div className="rounded-2xl border border-parchment-border bg-parchment-raised p-10 text-center">
+            <h2 className="font-serif text-2xl text-obsidian">Nothing recorded yet</h2>
+            <p className="mt-3 text-stone-warm">Add the first thing worth remembering.</p>
             <Link
               href="/add"
-              className="mt-6 inline-flex items-center justify-center rounded-full border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:border-stone-500"
+              className="mt-6 inline-flex items-center justify-center rounded-full bg-obsidian px-5 py-3 text-sm font-semibold text-parchment transition hover:bg-obsidian/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 focus-visible:ring-offset-parchment-raised"
             >
-              Open Add
+              Add your first record
             </Link>
           </div>
         ) : (
@@ -80,21 +75,21 @@ export default async function ListPage({ searchParams }: ListPageProps) {
               <Link
                 key={record.id}
                 href={`/records/${record.id}`}
-                className="rounded-3xl border border-stone-200 bg-white p-5 transition hover:border-stone-400"
+                className="rounded-xl border border-parchment-border bg-parchment-raised p-5 transition hover:border-ember/60"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  {record.type}
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-stone-warm">
+                  {FLINT_RECORD_TYPE_LABELS[record.type]}
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold text-stone-950">
+                <h2 className="mt-2 font-serif text-xl text-obsidian">
                   {record.title}
                 </h2>
                 {record.summary ? (
-                  <p className="mt-3 line-clamp-2 text-stone-600">
+                  <p className="mt-3 line-clamp-2 text-stone-warm">
                     {record.summary}
                   </p>
                 ) : null}
                 {record.when || record.where ? (
-                  <p className="mt-4 text-sm text-stone-500">
+                  <p className="mt-4 text-sm text-stone-soft">
                     {[record.when, record.where]
                       .reduce<string[]>((values, value) => {
                         if (value) values.push(value);

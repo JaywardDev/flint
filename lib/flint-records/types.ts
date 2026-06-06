@@ -13,6 +13,14 @@ export const FLINT_RECORD_TYPES: FlintRecordType[] = [
   "note",
 ];
 
+export const FLINT_RECORD_TYPE_LABELS: Record<FlintRecordType, string> = {
+  person: "Person",
+  event: "Event",
+  place: "Place",
+  object: "Object",
+  note: "Note",
+};
+
 export interface FlintRecord {
   id: string;
   user_id: string;

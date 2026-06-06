@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/server";
-import { getFlintRecord } from "@/lib/flint-records";
+import { getFlintRecord, FLINT_RECORD_TYPE_LABELS } from "@/lib/flint-records";
 import type { FlintSupabaseClient } from "@/lib/flint-records";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,10 +11,9 @@ type DetailPageProps = {
 };
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(
+    new Date(value),
+  );
 }
 
 export default async function DetailPage({ params }: DetailPageProps) {
@@ -28,48 +27,47 @@ export default async function DetailPage({ params }: DetailPageProps) {
     notFound();
   }
 
+  const whenWhere = [record.when, record.where]
+    .reduce<string[]>((values, value) => {
+      if (value) values.push(value);
+      return values;
+    }, [])
+    .join(" · ");
+
+  const wasEdited = record.updated_at !== record.created_at;
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10">
-      <header className="mb-10">
-        <Link href="/" className="text-sm font-medium text-stone-600 hover:text-stone-950">
+      <header className="mb-8">
+        <Link
+          href="/"
+          className="text-sm font-medium text-stone-warm transition hover:text-obsidian"
+        >
           Back to records
         </Link>
-        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-          {record.type}
+        <p className="mt-8 text-xs font-medium uppercase tracking-[0.18em] text-stone-warm">
+          {FLINT_RECORD_TYPE_LABELS[record.type]}
         </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-950">
+        <h1 className="mt-3 font-serif text-4xl leading-tight text-obsidian">
           {record.title}
         </h1>
+        {whenWhere ? (
+          <p className="mt-4 text-sm text-stone-warm">{whenWhere}</p>
+        ) : null}
       </header>
 
-      <article className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-        <dl className="grid gap-6">
-          <div>
-            <dt className="text-sm font-medium text-stone-500">Summary</dt>
-            <dd className="mt-2 text-lg leading-8 text-stone-950">
-              {record.summary ?? "—"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-stone-500">When</dt>
-            <dd className="mt-2 text-stone-950">{record.when ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-stone-500">Where</dt>
-            <dd className="mt-2 text-stone-950">{record.where ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-stone-500">Created</dt>
-            <dd className="mt-2 text-stone-950">{formatDate(record.created_at)}</dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-stone-500">Updated</dt>
-            <dd className="mt-2 text-stone-950">{formatDate(record.updated_at)}</dd>
-          </div>
-        </dl>
-      </article>
+      {record.summary ? (
+        <div className="border-t border-parchment-border pt-8">
+          <p className="whitespace-pre-line font-serif text-lg leading-8 text-obsidian">
+            {record.summary}
+          </p>
+        </div>
+      ) : null}
 
-      <p className="mt-6 text-xs text-stone-400">Record id: {id}</p>
+      <p className="mt-12 text-xs text-stone-soft">
+        Added {formatDate(record.created_at)}
+        {wasEdited ? ` · Updated ${formatDate(record.updated_at)}` : ""}
+      </p>
     </main>
   );
 }
