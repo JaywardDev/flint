@@ -28,6 +28,8 @@ export interface FlintRecord {
   title: string;
   summary: string | null;
   when: string | null;
+  start_year: number | null;
+  end_year: number | null;
   where: string | null;
   created_at: string;
   updated_at: string;
@@ -38,6 +40,8 @@ export interface CreateFlintRecordInput {
   title: string;
   summary?: string | null;
   when?: string | null;
+  start_year?: number | null;
+  end_year?: number | null;
   where?: string | null;
 }
 

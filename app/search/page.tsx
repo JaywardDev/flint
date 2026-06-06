@@ -44,7 +44,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           Search records
         </h1>
         <p className="mt-2 text-sm leading-6 text-stone-warm">
-          Find something specific without the notebook getting crowded.
+          Search words, places, types, or years.
         </p>
 
         <form className="mt-6" role="search">
@@ -75,7 +75,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
         {!hasQuery ? (
           <p className="rounded-xl border border-parchment-border bg-parchment-raised px-5 py-8 text-center text-stone-warm">
-            Search by title, summary, when, where, or type.
+            Search words, places, types, or years.
           </p>
         ) : records.length > 0 ? (
           <RecordList records={records} labelledBy="results-heading" />

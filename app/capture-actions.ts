@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createFlintRecord, FLINT_RECORD_TYPES } from "@/lib/flint-records";
+import {
+  createFlintRecord,
+  FLINT_RECORD_TYPES,
+  parseFlintYearRange,
+} from "@/lib/flint-records";
 import type { FlintRecordType, FlintSupabaseClient } from "@/lib/flint-records";
 import type { AddRecordState } from "@/app/capture-state";
 import { requireUser } from "@/lib/auth/server";
@@ -39,11 +43,16 @@ export async function createRecordAction(
     return { status: "error", error: "Add a title first, then keep it." };
   }
 
+  const when = optionalText(text(formData.get("when")));
+  const yearRange = when ? parseFlintYearRange(when) : null;
+
   const record = await createFlintRecord(recordsClient, user.id, {
     type: requireRecordType(text(formData.get("type"))),
     title,
     summary: optionalText(text(formData.get("summary"))),
-    when: optionalText(text(formData.get("when"))),
+    when,
+    start_year: yearRange?.startYear ?? null,
+    end_year: yearRange?.endYear ?? null,
     where: optionalText(text(formData.get("where"))),
   });
 
