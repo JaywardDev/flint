@@ -2,9 +2,11 @@ import Link from "next/link";
 
 import { requireUser } from "@/lib/auth/server";
 import { searchFlintRecords, FLINT_RECORD_TYPE_LABELS } from "@/lib/flint-records";
-import type { FlintSupabaseClient } from "@/lib/flint-records";
+import type { FlintRecord, FlintSupabaseClient } from "@/lib/flint-records";
 import { createClient } from "@/lib/supabase/server";
 
+import { CaptureBox } from "./capture-box";
+import { EXAMPLE_RECORDS } from "./example-records";
 import { SignOutButton } from "./sign-out-button";
 import { Wordmark } from "./wordmark";
 
@@ -12,38 +14,36 @@ type ListPageProps = {
   searchParams: Promise<{ q?: string }>;
 };
 
-export default async function ListPage({ searchParams }: ListPageProps) {
+function metaLine(when: string | null | undefined, where: string | null | undefined) {
+  return [when, where]
+    .reduce<string[]>((parts, value) => {
+      if (value) parts.push(value);
+      return parts;
+    }, [])
+    .join(" · ");
+}
+
+export default async function HomePage({ searchParams }: ListPageProps) {
   const user = await requireUser();
   const supabase = await createClient();
   const recordsClient = supabase as unknown as FlintSupabaseClient;
   const params = await searchParams;
   const queryValue = params.q ?? "";
-  const visibleRecords = await searchFlintRecords(recordsClient, user.id, queryValue);
+  const hasQuery = queryValue.trim().length > 0;
+  const records = await searchFlintRecords(recordsClient, user.id, queryValue);
+
+  const showExamples = records.length === 0 && !hasQuery;
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
-      <header className="mb-10">
-        <div className="flex items-center justify-between">
-          <Wordmark className="text-sm" />
-          <SignOutButton />
-        </div>
-        <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-serif text-4xl text-obsidian">Records</h1>
-            <p className="mt-3 max-w-xl text-base leading-7 text-stone-warm">
-              A quiet notebook of people, events, places, objects, and notes.
-            </p>
-          </div>
-          <Link
-            href="/add"
-            className="inline-flex items-center justify-center rounded-full bg-obsidian px-5 py-3 text-sm font-semibold text-parchment transition hover:bg-obsidian/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 focus-visible:ring-offset-parchment"
-          >
-            Add record
-          </Link>
-        </div>
+      <header className="mb-8 flex items-center justify-between">
+        <Wordmark className="text-sm" />
+        <SignOutButton />
       </header>
 
-      <form className="mb-8" role="search">
+      <CaptureBox />
+
+      <form className="mt-8" role="search">
         <label htmlFor="q" className="sr-only">
           Search records
         </label>
@@ -57,53 +57,77 @@ export default async function ListPage({ searchParams }: ListPageProps) {
         />
       </form>
 
-      <section className="flex flex-col gap-3" aria-label="Records">
-        {visibleRecords.length === 0 ? (
-          <div className="rounded-2xl border border-parchment-border bg-parchment-raised p-10 text-center">
-            <h2 className="font-serif text-2xl text-obsidian">Nothing recorded yet</h2>
-            <p className="mt-3 text-stone-warm">Add the first thing worth remembering.</p>
-            <Link
-              href="/add"
-              className="mt-6 inline-flex items-center justify-center rounded-full bg-obsidian px-5 py-3 text-sm font-semibold text-parchment transition hover:bg-obsidian/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 focus-visible:ring-offset-parchment-raised"
-            >
-              Add your first record
-            </Link>
-          </div>
-        ) : (
-          visibleRecords.reduce<React.ReactNode[]>((items, record) => {
-            items.push(
-              <Link
-                key={record.id}
-                href={`/records/${record.id}`}
-                className="rounded-xl border border-parchment-border bg-parchment-raised p-5 transition hover:border-ember/60"
-              >
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-stone-warm">
-                  {FLINT_RECORD_TYPE_LABELS[record.type]}
-                </p>
-                <h2 className="mt-2 font-serif text-xl text-obsidian">
-                  {record.title}
-                </h2>
-                {record.summary ? (
-                  <p className="mt-3 line-clamp-2 text-stone-warm">
-                    {record.summary}
-                  </p>
-                ) : null}
-                {record.when || record.where ? (
-                  <p className="mt-4 text-sm text-stone-soft">
-                    {[record.when, record.where]
-                      .reduce<string[]>((values, value) => {
-                        if (value) values.push(value);
-                        return values;
-                      }, [])
-                      .join(" · ")}
-                  </p>
-                ) : null}
-              </Link>,
-            );
+      <section className="mt-8 flex flex-col gap-3" aria-label="Records">
+        <div className="mb-1 flex items-center gap-4">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-stone-soft">
+            {hasQuery ? "Results" : "Recent"}
+          </p>
+          <span className="h-px flex-1 bg-parchment-border" aria-hidden />
+        </div>
+
+        {records.length > 0 ? (
+          records.reduce<React.ReactNode[]>((items, record) => {
+            items.push(<RecordCard key={record.id} record={record} />);
             return items;
           }, [])
+        ) : showExamples ? (
+          <>
+            <p className="mb-1 text-sm text-stone-warm">
+              A few examples to show the shape of a record. Add your own above —
+              these fade once you do.
+            </p>
+            {EXAMPLE_RECORDS.reduce<React.ReactNode[]>((items, record, index) => {
+              items.push(<ExampleCard key={index} record={record} />);
+              return items;
+            }, [])}
+          </>
+        ) : (
+          <p className="rounded-xl border border-parchment-border bg-parchment-raised px-5 py-8 text-center text-stone-warm">
+            Nothing matches “{queryValue.trim()}”.
+          </p>
         )}
       </section>
     </main>
+  );
+}
+
+function RecordCard({ record }: { record: FlintRecord }) {
+  const meta = metaLine(record.when, record.where);
+
+  return (
+    <Link
+      href={`/records/${record.id}`}
+      className="rounded-xl border border-parchment-border bg-parchment-raised p-5 transition hover:border-ember/60"
+    >
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-stone-warm">
+        {FLINT_RECORD_TYPE_LABELS[record.type]}
+      </p>
+      <h2 className="mt-2 font-serif text-xl text-obsidian">{record.title}</h2>
+      {record.summary ? (
+        <p className="mt-3 line-clamp-2 text-stone-warm">{record.summary}</p>
+      ) : null}
+      {meta ? <p className="mt-4 text-sm text-stone-soft">{meta}</p> : null}
+    </Link>
+  );
+}
+
+function ExampleCard({ record }: { record: (typeof EXAMPLE_RECORDS)[number] }) {
+  const meta = metaLine(record.when, record.where);
+
+  return (
+    <div className="rounded-xl border border-dashed border-parchment-border bg-parchment-raised/60 p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-stone-warm">
+          {FLINT_RECORD_TYPE_LABELS[record.type]}
+        </p>
+        <span className="inline-flex items-center gap-1.5 text-xs text-ember">
+          <span className="inline-block h-1.5 w-1.5 rotate-45 bg-ember" aria-hidden />
+          Example
+        </span>
+      </div>
+      <h2 className="mt-2 font-serif text-xl text-obsidian">{record.title}</h2>
+      <p className="mt-3 text-stone-warm">{record.summary}</p>
+      {meta ? <p className="mt-4 text-sm text-stone-soft">{meta}</p> : null}
+    </div>
   );
 }

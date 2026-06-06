@@ -1,22 +1,18 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { createFlintRecord, FLINT_RECORD_TYPES } from "@/lib/flint-records";
 import type { FlintRecordType, FlintSupabaseClient } from "@/lib/flint-records";
 import { requireUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 
-export type AddRecordState = {
-  error?: string;
-  values: {
-    type: string;
-    title: string;
-    summary: string;
-    when: string;
-    where: string;
-  };
-};
+export type AddRecordState =
+  | { status: "idle" }
+  | { status: "error"; error: string }
+  | { status: "saved"; id: string; nonce: number };
+
+export const initialCaptureState: AddRecordState = { status: "idle" };
 
 function text(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value : "";
@@ -43,27 +39,23 @@ export async function createRecordAction(
   const supabase = await createClient();
   const recordsClient = supabase as unknown as FlintSupabaseClient;
 
-  const values = {
-    type: text(formData.get("type")),
-    title: text(formData.get("title")),
-    summary: text(formData.get("summary")),
-    when: text(formData.get("when")),
-    where: text(formData.get("where")),
-  };
-
-  const title = optionalText(values.title);
+  const title = optionalText(text(formData.get("title")));
 
   if (!title) {
-    return { error: "Add a title before saving.", values };
+    return { status: "error", error: "Jot a title first, then keep it." };
   }
 
   const record = await createFlintRecord(recordsClient, user.id, {
-    type: requireRecordType(values.type),
+    type: requireRecordType(text(formData.get("type"))),
     title,
-    summary: optionalText(values.summary),
-    when: optionalText(values.when),
-    where: optionalText(values.where),
+    summary: optionalText(text(formData.get("summary"))),
+    when: optionalText(text(formData.get("when"))),
+    where: optionalText(text(formData.get("where"))),
   });
 
-  redirect(`/records/${record.id}`);
+  // Refresh the list below the capture box so the new record appears
+  // immediately, without taking the user away from the capture surface.
+  revalidatePath("/");
+
+  return { status: "saved", id: record.id, nonce: Date.now() };
 }
