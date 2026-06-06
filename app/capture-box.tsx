@@ -80,7 +80,7 @@ export function CaptureBox() {
           onChange={(event) => setHasTitle(event.target.value.trim().length > 0)}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? "capture-error" : undefined}
-          placeholder="Jot a title…"
+          placeholder="What do you want to remember?"
           className="w-full border-none bg-transparent font-serif text-2xl leading-snug text-obsidian outline-none placeholder:text-stone-soft"
         />
         {savedId ? (
@@ -99,7 +99,7 @@ export function CaptureBox() {
         rows={3}
         autoComplete="off"
         aria-label="Summary"
-        placeholder="A few lines — what it is, why it caught your attention."
+        placeholder="Why does it matter? Add a few lines."
         className="mt-3 w-full resize-none border-none bg-transparent text-base leading-7 text-obsidian outline-none placeholder:text-stone-soft"
       />
 
@@ -114,8 +114,18 @@ export function CaptureBox() {
         </p>
       ) : null}
 
+      {savedId ? (
+        <p
+          role="status"
+          className="mt-2 flex items-center gap-2 text-sm text-stone-warm"
+        >
+          <span className="inline-block h-1.5 w-1.5 rotate-45 bg-ember" aria-hidden />
+          Saved. Add another whenever you’re ready.
+        </p>
+      ) : null}
+
       <div className="mt-5 border-t border-parchment-border pt-4">
-        {/* Time and place: quiet, optional, opened only on request. */}
+        {/* When and where: quiet, optional, opened only on request. */}
         <div className="flex flex-wrap items-center gap-2">
           {showWhen ? (
             <input
@@ -147,7 +157,7 @@ export function CaptureBox() {
             />
           ) : (
             <MetaChip
-              label="place"
+              label="where"
               onClick={() => {
                 setShowWhere(true);
                 requestAnimationFrame(() => whereRef.current?.focus());
@@ -181,7 +191,7 @@ export function CaptureBox() {
 
         <div className="mt-5 flex items-center justify-between gap-4">
           <p className="text-sm text-stone-soft">
-            type is optional · note by default
+            Saved as a note unless you choose another type.
           </p>
           <button
             type="submit"
@@ -189,7 +199,7 @@ export function CaptureBox() {
             className="inline-flex items-center gap-2 rounded-full bg-obsidian px-5 py-2.5 text-sm font-semibold text-parchment transition hover:bg-obsidian/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember focus-visible:ring-offset-2 focus-visible:ring-offset-parchment-raised disabled:cursor-not-allowed disabled:bg-stone-warm/40 disabled:text-parchment/70"
           >
             {pending ? "Keeping…" : "Keep it"}
-            <span aria-hidden className="text-parchment/60">
+            <span aria-hidden className="hidden text-parchment/60 sm:inline">
               ⌘↵
             </span>
           </button>
