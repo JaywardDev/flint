@@ -4,6 +4,7 @@ import type { FlintSupabaseClient } from "@/lib/flint-records";
 import { createClient } from "@/lib/supabase/server";
 
 import { AppHeader } from "../app-header";
+import { BottomNav } from "../bottom-nav";
 import { RecordList } from "../record-list";
 
 export default async function RecordsPage() {
@@ -13,7 +14,8 @@ export default async function RecordsPage() {
   const records = await listFlintRecords(recordsClient, user.id);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+    <>
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pb-28 pt-10 sm:pb-10">
       <AppHeader
         links={[
           { href: "/add", label: "Add" },
@@ -44,5 +46,7 @@ export default async function RecordsPage() {
         )}
       </section>
     </main>
+    <BottomNav />
+    </>
   );
 }

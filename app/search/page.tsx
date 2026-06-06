@@ -4,6 +4,7 @@ import type { FlintSupabaseClient } from "@/lib/flint-records";
 import { createClient } from "@/lib/supabase/server";
 
 import { AppHeader } from "../app-header";
+import { BottomNav } from "../bottom-nav";
 import { RecordList } from "../record-list";
 
 type SearchPageProps = {
@@ -29,7 +30,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     : [];
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+    <>
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pb-28 pt-10 sm:pb-10">
       <AppHeader
         links={[
           { href: "/records", label: "Records" },
@@ -84,5 +86,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         )}
       </section>
     </main>
+    <BottomNav />
+    </>
   );
 }
