@@ -192,7 +192,19 @@ describe("Flint record year search", () => {
     assert.equal(record.start_year, 1871);
     assert.equal(record.end_year, 1970);
 
-    for (const query of ["1871", "1925", "1970"]) {
+    for (const query of [
+      "1889",
+      "1890",
+      "1890s",
+      "1900",
+      "1900s",
+      "1901",
+      "1910s",
+      "early 1900s",
+      "1925",
+      "mid 1900s",
+      "1970",
+    ]) {
       const results = await searchFlintRecords(supabase, "user-1", query);
       assert.deepEqual(
         results.map((result) => result.id),
@@ -201,7 +213,7 @@ describe("Flint record year search", () => {
       );
     }
 
-    for (const query of ["1870", "1971"]) {
+    for (const query of ["1870", "1971", "1700s", "late 2000s"]) {
       const results = await searchFlintRecords(supabase, "user-1", query);
       assert.deepEqual(
         results.map((result) => result.id),
