@@ -3,6 +3,7 @@ import type {
   FlintRecord,
   UpdateFlintRecordInput,
 } from "./types";
+import { parseFlintYearRange } from "./time";
 
 interface FlintSupabaseResult {
   data: unknown;
@@ -11,6 +12,8 @@ interface FlintSupabaseResult {
 
 interface FlintRecordsRequest extends PromiseLike<FlintSupabaseResult> {
   eq(column: string, value: string): FlintRecordsRequest;
+  gte(column: string, value: string | number): FlintRecordsRequest;
+  lte(column: string, value: string | number): FlintRecordsRequest;
   or(query: string): FlintRecordsRequest;
   order(column: string, options: { ascending: boolean }): FlintRecordsRequest;
   select(columns?: string): FlintRecordsRequest;
@@ -33,7 +36,7 @@ export interface FlintSupabaseClient {
 }
 
 const RECORD_COLUMNS =
-  "id,user_id,type,title,summary,when,where,created_at,updated_at";
+  "id,user_id,type,title,summary,when,start_year,end_year,where,created_at,updated_at";
 
 function escapeSearchTerm(searchQuery: string): string {
   return searchQuery.replaceAll("%", "\\%").replaceAll("_", "\\_");
@@ -133,7 +136,7 @@ export async function searchFlintRecords(
   }
 
   const term = escapeSearchTerm(trimmedQuery);
-  const { data, error } = await supabase
+  const { data: textData, error: textError } = await supabase
     .from("records")
     .select(RECORD_COLUMNS)
     .eq("user_id", userId)
@@ -142,6 +145,32 @@ export async function searchFlintRecords(
     )
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
-  return data as FlintRecord[];
+  if (textError) throw textError;
+
+  const mergedRecords = new Map<string, FlintRecord>();
+  for (const record of textData as FlintRecord[]) {
+    mergedRecords.set(record.id, record);
+  }
+
+  const queryRange = parseFlintYearRange(trimmedQuery);
+
+  if (queryRange) {
+    const { data: yearData, error: yearError } = await supabase
+      .from("records")
+      .select(RECORD_COLUMNS)
+      .eq("user_id", userId)
+      .lte("start_year", queryRange.endYear)
+      .gte("end_year", queryRange.startYear)
+      .order("created_at", { ascending: false });
+
+    if (yearError) throw yearError;
+
+    for (const record of yearData as FlintRecord[]) {
+      mergedRecords.set(record.id, record);
+    }
+  }
+
+  return Array.from(mergedRecords.values()).sort((a, b) =>
+    b.created_at.localeCompare(a.created_at),
+  );
 }
