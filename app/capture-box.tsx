@@ -10,7 +10,8 @@ import {
 } from "@/lib/flint-records";
 import type { FlintRecordType } from "@/lib/flint-records";
 
-import { createRecordAction, initialCaptureState } from "./capture-actions";
+import { createRecordAction } from "./capture-actions";
+import { initialCaptureState } from "./capture-state";
 
 export function CaptureBox() {
   const [state, formAction, pending] = useActionState(
