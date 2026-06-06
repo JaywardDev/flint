@@ -9,21 +9,22 @@ interface FlintSupabaseResult {
   error: unknown;
 }
 
-interface FlintRecordsFilterQuery extends PromiseLike<FlintSupabaseResult> {
-  eq(column: string, value: string): FlintRecordsFilterQuery;
+interface FlintRecordsRequest extends PromiseLike<FlintSupabaseResult> {
+  eq(column: string, value: string): FlintRecordsRequest;
+  or(query: string): FlintRecordsRequest;
   order(
     column: string,
     options: { ascending: boolean },
-  ): FlintRecordsFilterQuery;
-  select(columns?: string): FlintRecordsFilterQuery;
+  ): FlintRecordsRequest;
+  select(columns?: string): FlintRecordsRequest;
   single(): PromiseLike<FlintSupabaseResult>;
 }
 
 interface FlintRecordsQuery {
-  delete(): FlintRecordsFilterQuery;
-  insert(values: CreateFlintRecordInput): FlintRecordsFilterQuery;
-  select(columns?: string): FlintRecordsFilterQuery;
-  update(values: UpdateFlintRecordInput): FlintRecordsFilterQuery;
+  delete(): FlintRecordsRequest;
+  insert(values: CreateFlintRecordInput): FlintRecordsRequest;
+  select(columns?: string): FlintRecordsRequest;
+  update(values: UpdateFlintRecordInput): FlintRecordsRequest;
 }
 
 /**
@@ -32,10 +33,13 @@ interface FlintRecordsQuery {
  */
 export interface FlintSupabaseClient {
   from(relation: "records"): FlintRecordsQuery;
-  rpc(
-    fn: "search_records",
-    args: { search_query: string },
-  ): PromiseLike<FlintSupabaseResult>;
+}
+
+const RECORD_COLUMNS =
+  "id,user_id,type,title,summary,when,where,created_at,updated_at";
+
+function escapeSearchTerm(searchQuery: string): string {
+  return searchQuery.replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
 
 export async function createFlintRecord(
@@ -45,7 +49,7 @@ export async function createFlintRecord(
   const { data, error } = await supabase
     .from("records")
     .insert(input)
-    .select()
+    .select(RECORD_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -61,7 +65,7 @@ export async function updateFlintRecord(
     .from("records")
     .update(input)
     .eq("id", id)
-    .select()
+    .select(RECORD_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -82,7 +86,7 @@ export async function listFlintRecords(
 ): Promise<FlintRecord[]> {
   const { data, error } = await supabase
     .from("records")
-    .select()
+    .select(RECORD_COLUMNS)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -93,9 +97,20 @@ export async function searchFlintRecords(
   supabase: FlintSupabaseClient,
   searchQuery: string,
 ): Promise<FlintRecord[]> {
-  const { data, error } = await supabase.rpc("search_records", {
-    search_query: searchQuery,
-  });
+  const trimmedQuery = searchQuery.trim();
+
+  if (!trimmedQuery) {
+    return listFlintRecords(supabase);
+  }
+
+  const term = escapeSearchTerm(trimmedQuery);
+  const { data, error } = await supabase
+    .from("records")
+    .select(RECORD_COLUMNS)
+    .or(
+      `title.ilike.%${term}%,summary.ilike.%${term}%,when.ilike.%${term}%,where.ilike.%${term}%,type.ilike.%${term}%`,
+    )
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
   return data as FlintRecord[];

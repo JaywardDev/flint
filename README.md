@@ -1,9 +1,13 @@
 # Flint
 
-Flint helps you collect small sparks of history until something catches fire.
+Flint V1 is a simple personal notebook for short history records.
 
-A personal history-learning tool for capturing short, time-anchored records about people, places, events, objects, and observations, so hidden patterns and connections can reveal themselves over time.
+The current implementation follows the strict V1 doctrine: Add, List, Detail, and one Record shape.
 
-## Product Doctrine
+## Current Product Doctrine
+
+See: `docs/FLINT_V1_DOCTRINE.md`
+
+## Long-Term Direction
 
 See: `docs/PRODUCT_VISION.md`

@@ -1,5 +1,7 @@
 # Flint — Product Vision & Architecture Doctrine
 
+> This document describes long-term product direction. For current implementation, `docs/FLINT_V1_DOCTRINE.md` is authoritative.
+
 ## 1. Core Idea
 
 **Flint helps you collect small sparks of history until something catches fire.**
