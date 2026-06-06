@@ -40,7 +40,7 @@ export default async function DetailPage({ params }: DetailPageProps) {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <header className="mb-8">
         <Link
-          href="/"
+          href="/records"
           className="text-sm font-medium text-stone-warm transition hover:text-obsidian"
         >
           Back to records

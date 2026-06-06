@@ -53,9 +53,9 @@ export async function createRecordAction(
     where: optionalText(text(formData.get("where"))),
   });
 
-  // Refresh the list below the capture box so the new record appears
-  // immediately, without taking the user away from the capture surface.
-  revalidatePath("/");
+  // Refresh notebook views without taking the user away from capture.
+  revalidatePath("/records");
+  revalidatePath("/search");
 
   return { status: "saved", id: record.id, nonce: Date.now() };
 }
