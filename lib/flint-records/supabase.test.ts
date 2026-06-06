@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   createFlintRecord,
+  deleteFlintRecord,
   searchFlintRecords,
   updateFlintRecord,
   type FlintSupabaseClient,
@@ -102,6 +103,17 @@ class FakeRecordsRequest implements PromiseLike<{ data: unknown; error: unknown 
 
       Object.assign(existing, this.values, { updated_at: new Date().toISOString() });
       return { data: existing, error: null };
+    }
+
+    if (this.operation === "delete") {
+      const matchingIds = new Set(
+        this.applyFilters(this.records).map((record) => record.id),
+      );
+      const keptRecords = this.records.filter(
+        (record) => !matchingIds.has(record.id),
+      );
+      this.records.splice(0, this.records.length, ...keptRecords);
+      return { data: null, error: null };
     }
 
     const data = this.applyFilters(this.records)
@@ -213,5 +225,41 @@ describe("Flint record year search", () => {
 
     assert.equal(updated.start_year, 1931);
     assert.equal(updated.end_year, 1970);
+  });
+});
+
+describe("Flint record deletion", () => {
+  it("deletes only records owned by the supplied user", async () => {
+    const supabase = new FakeFlintSupabaseClient();
+    const owned = await createFlintRecord(supabase, "user-1", {
+      type: "note",
+      title: "Owned record",
+    });
+    const other = await createFlintRecord(supabase, "user-2", {
+      type: "note",
+      title: "Other record",
+    });
+
+    await deleteFlintRecord(supabase, "user-1", owned.id);
+
+    assert.deepEqual(
+      supabase.records.map((record) => record.id),
+      [other.id],
+    );
+  });
+
+  it("does not delete another user's matching record id", async () => {
+    const supabase = new FakeFlintSupabaseClient();
+    const other = await createFlintRecord(supabase, "user-2", {
+      type: "note",
+      title: "Other record",
+    });
+
+    await deleteFlintRecord(supabase, "user-1", other.id);
+
+    assert.deepEqual(
+      supabase.records.map((record) => record.id),
+      [other.id],
+    );
   });
 });
