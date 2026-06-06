@@ -1,65 +1,128 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+import type { FlintRecord } from "@/lib/flint-records";
+
+type ListPageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+const records: FlintRecord[] = [];
+
+function includesQuery(value: string | null, query: string) {
+  return value?.toLowerCase().includes(query) ?? false;
+}
+
+function searchRecords(query: string) {
+  if (!query) return records;
+
+  return records.reduce<FlintRecord[]>((matches, record) => {
+    if (
+      includesQuery(record.type, query) ||
+      includesQuery(record.title, query) ||
+      includesQuery(record.summary, query) ||
+      includesQuery(record.when, query) ||
+      includesQuery(record.where, query)
+    ) {
+      matches.push(record);
+    }
+
+    return matches;
+  }, []);
+}
+
+export default async function ListPage({ searchParams }: ListPageProps) {
+  const params = await searchParams;
+  const queryValue = params.q ?? "";
+  const query = queryValue.trim().toLowerCase();
+  const visibleRecords = searchRecords(query);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+      <header className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+            Flint
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-950">
+            Records
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-3 max-w-xl text-base leading-7 text-stone-600">
+            A simple notebook of people, events, places, objects, and notes.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        <Link
+          href="/add"
+          className="inline-flex items-center justify-center rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
+        >
+          Add record
+        </Link>
+      </header>
+
+      <form className="mb-6" role="search">
+        <label htmlFor="q" className="sr-only">
+          Search records
+        </label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          defaultValue={queryValue}
+          placeholder="Search records"
+          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-stone-400"
+        />
+      </form>
+
+      <section className="flex flex-col gap-3" aria-label="Records">
+        {visibleRecords.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-stone-300 bg-white p-8 text-center">
+            <h2 className="text-xl font-semibold text-stone-950">
+              No records yet
+            </h2>
+            <p className="mt-3 text-stone-600">
+              Add the first record when something is worth remembering.
+            </p>
+            <Link
+              href="/add"
+              className="mt-6 inline-flex items-center justify-center rounded-full border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:border-stone-500"
+            >
+              Open Add
+            </Link>
+          </div>
+        ) : (
+          visibleRecords.reduce<React.ReactNode[]>((items, record) => {
+            items.push(
+              <Link
+                key={record.id}
+                href={`/records/${record.id}`}
+                className="rounded-3xl border border-stone-200 bg-white p-5 transition hover:border-stone-400"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                  {record.type}
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold text-stone-950">
+                  {record.title}
+                </h2>
+                {record.summary ? (
+                  <p className="mt-3 line-clamp-2 text-stone-600">
+                    {record.summary}
+                  </p>
+                ) : null}
+                {record.when || record.where ? (
+                  <p className="mt-4 text-sm text-stone-500">
+                    {[record.when, record.where]
+                      .reduce<string[]>((values, value) => {
+                        if (value) values.push(value);
+                        return values;
+                      }, [])
+                      .join(" · ")}
+                  </p>
+                ) : null}
+              </Link>,
+            );
+            return items;
+          }, [])
+        )}
+      </section>
+    </main>
   );
 }
