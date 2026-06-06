@@ -3,6 +3,8 @@ export interface FlintYearRange {
   endYear: number;
 }
 
+type FlintYearRangePart = "early" | "mid" | "late";
+
 const YEAR_PATTERN = "([1-9][0-9]{0,3})";
 const YEAR_OR_PERIOD_PATTERN = "([1-9][0-9]{0,3}s?)";
 const LEFT_BOUNDARY = "(?<![0-9A-Za-z])";
@@ -22,6 +24,11 @@ const RANGE_RE = new RegExp(
   `${LEFT_BOUNDARY}${YEAR_OR_PERIOD_PATTERN}\\s*(?:[-–—]|to)\\s*${YEAR_OR_PERIOD_PATTERN}${RIGHT_BOUNDARY}`,
   "i",
 );
+const COMPOUND_RANGE_RE = /^(.+?)\s*(?:[-–—]|\bto\b)\s*(.+)$/i;
+const ENDPOINT_YEAR_RE = /^([1-9][0-9]{0,3})$/;
+const ENDPOINT_PERIOD_RE = /^(?:(early|mid|late)\s+)?([1-9][0-9]{0,3})s$/i;
+const ENDPOINT_CENTURY_RE =
+  /^(?:(early|mid|late)\s+)?([1-9][0-9]{0,1})(?:st|nd|rd|th)\s+century$/i;
 
 function isSupportedYear(year: number) {
   return Number.isInteger(year) && year >= 1 && year <= 9999;
@@ -50,21 +57,93 @@ function periodRange(period: string): FlintYearRange | null {
   return yearRange(startYear, startYear + span);
 }
 
-function rangeEndpoint(token: string, endpoint: "start" | "end"): number | null {
-  if (!token.toLowerCase().endsWith("s")) {
-    const year = Number(token);
-    return isSupportedYear(year) ? year : null;
+function centuryRange(century: string): FlintYearRange | null {
+  const centuryNumber = Number(century);
+  if (!Number.isInteger(centuryNumber) || centuryNumber < 1) return null;
+
+  const startYear = centuryNumber === 1 ? 1 : (centuryNumber - 1) * 100;
+  const endYear = centuryNumber * 100 - 1;
+  return yearRange(startYear, endYear);
+}
+
+function centuryPartRange(
+  range: FlintYearRange,
+  part: FlintYearRangePart | null,
+): FlintYearRange | null {
+  if (!part) return range;
+
+  const centurySpan = range.endYear - range.startYear;
+  if (centurySpan !== 99) return null;
+
+  if (part === "early") {
+    return yearRange(range.startYear, range.startYear + 30);
   }
 
-  const range = periodRange(token.slice(0, -1));
+  if (part === "mid") {
+    return yearRange(range.startYear + 31, range.startYear + 70);
+  }
+
+  return yearRange(range.startYear + 71, range.startYear + 99);
+}
+
+function rangeEndpoint(token: string, endpoint: "start" | "end"): number | null {
+  const range = parseRangeEndpoint(token);
   if (!range) return null;
 
   return endpoint === "start" ? range.startYear : range.endYear;
 }
 
+function normalizePart(part: string | undefined): FlintYearRangePart | null {
+  const normalized = part?.toLowerCase();
+  if (
+    normalized === "early" ||
+    normalized === "mid" ||
+    normalized === "late"
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
+function parseRangeEndpoint(token: string): FlintYearRange | null {
+  const normalized = token.trim().replace(/\s+/g, " ");
+
+  const yearMatch = normalized.match(ENDPOINT_YEAR_RE);
+  if (yearMatch) {
+    const year = Number(yearMatch[1]);
+    return yearRange(year, year);
+  }
+
+  const periodMatch = normalized.match(ENDPOINT_PERIOD_RE);
+  if (periodMatch) {
+    const range = periodRange(periodMatch[2]);
+    return range ? centuryPartRange(range, normalizePart(periodMatch[1])) : null;
+  }
+
+  const centuryMatch = normalized.match(ENDPOINT_CENTURY_RE);
+  if (centuryMatch) {
+    const range = centuryRange(centuryMatch[2]);
+    return range ? centuryPartRange(range, normalizePart(centuryMatch[1])) : null;
+  }
+
+  return null;
+}
+
 export function parseFlintYearRange(value: string): FlintYearRange | null {
   const normalized = value.trim().replace(/\s+/g, " ");
   if (!normalized) return null;
+
+  const compoundRangeMatch = normalized.match(COMPOUND_RANGE_RE);
+  if (compoundRangeMatch) {
+    const startYear = rangeEndpoint(compoundRangeMatch[1], "start");
+    const endYear = rangeEndpoint(compoundRangeMatch[2], "end");
+
+    if (startYear !== null && endYear !== null) {
+      const range = yearRange(startYear, endYear);
+      if (range) return range;
+    }
+  }
 
   const rangeMatch = normalized.match(RANGE_RE);
   if (rangeMatch) {
@@ -76,6 +155,9 @@ export function parseFlintYearRange(value: string): FlintYearRange | null {
       if (range) return range;
     }
   }
+
+  const wholeEndpointRange = parseRangeEndpoint(normalized);
+  if (wholeEndpointRange) return wholeEndpointRange;
 
   const centuryStyleMatch = normalized.match(CENTURY_STYLE_RE);
   if (centuryStyleMatch) {
