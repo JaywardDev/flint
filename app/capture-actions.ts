@@ -4,15 +4,9 @@ import { revalidatePath } from "next/cache";
 
 import { createFlintRecord, FLINT_RECORD_TYPES } from "@/lib/flint-records";
 import type { FlintRecordType, FlintSupabaseClient } from "@/lib/flint-records";
+import type { AddRecordState } from "@/app/capture-state";
 import { requireUser } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
-
-export type AddRecordState =
-  | { status: "idle" }
-  | { status: "error"; error: string }
-  | { status: "saved"; id: string; nonce: number };
-
-export const initialCaptureState: AddRecordState = { status: "idle" };
 
 function text(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value : "";
@@ -42,7 +36,7 @@ export async function createRecordAction(
   const title = optionalText(text(formData.get("title")));
 
   if (!title) {
-    return { status: "error", error: "Jot a title first, then keep it." };
+    return { status: "error", error: "Add a title first, then keep it." };
   }
 
   const record = await createFlintRecord(recordsClient, user.id, {
