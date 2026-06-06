@@ -1,8 +1,12 @@
 import Link from "next/link";
 
+import { requireUser } from "@/lib/auth/server";
 import { FLINT_RECORD_TYPES } from "@/lib/flint-records";
 
-export default function AddPage() {
+import { createRecordAction } from "./actions";
+
+export default async function AddPage() {
+  await requireUser();
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <header className="mb-10">
@@ -17,7 +21,10 @@ export default function AddPage() {
         </p>
       </header>
 
-      <form className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+      <form
+        action={createRecordAction}
+        className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+      >
         <div className="grid gap-5">
           <label className="grid gap-2 text-sm font-medium text-stone-700" htmlFor="type">
             Type

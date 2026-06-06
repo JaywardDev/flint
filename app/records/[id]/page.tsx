@@ -1,21 +1,32 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { requireUser } from "@/lib/auth/server";
+import { getFlintRecord } from "@/lib/flint-records";
+import type { FlintSupabaseClient } from "@/lib/flint-records";
+import { createClient } from "@/lib/supabase/server";
 
 type DetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-const emptyRecord = {
-  type: "note",
-  title: "Record not loaded",
-  summary: "Saved record details will appear here when data access is connected.",
-  when: null,
-  where: null,
-  created_at: "—",
-  updated_at: "—",
-};
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
 
 export default async function DetailPage({ params }: DetailPageProps) {
+  const user = await requireUser();
+  const supabase = await createClient();
+  const recordsClient = supabase as unknown as FlintSupabaseClient;
   const { id } = await params;
+  const record = await getFlintRecord(recordsClient, user.id, id);
+
+  if (!record) {
+    notFound();
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10">
@@ -24,10 +35,10 @@ export default async function DetailPage({ params }: DetailPageProps) {
           Back to records
         </Link>
         <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-          {emptyRecord.type}
+          {record.type}
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-950">
-          {emptyRecord.title}
+          {record.title}
         </h1>
       </header>
 
@@ -36,24 +47,24 @@ export default async function DetailPage({ params }: DetailPageProps) {
           <div>
             <dt className="text-sm font-medium text-stone-500">Summary</dt>
             <dd className="mt-2 text-lg leading-8 text-stone-950">
-              {emptyRecord.summary}
+              {record.summary ?? "—"}
             </dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-stone-500">When</dt>
-            <dd className="mt-2 text-stone-950">{emptyRecord.when ?? "—"}</dd>
+            <dd className="mt-2 text-stone-950">{record.when ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-stone-500">Where</dt>
-            <dd className="mt-2 text-stone-950">{emptyRecord.where ?? "—"}</dd>
+            <dd className="mt-2 text-stone-950">{record.where ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-stone-500">Created</dt>
-            <dd className="mt-2 text-stone-950">{emptyRecord.created_at}</dd>
+            <dd className="mt-2 text-stone-950">{formatDate(record.created_at)}</dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-stone-500">Updated</dt>
-            <dd className="mt-2 text-stone-950">{emptyRecord.updated_at}</dd>
+            <dd className="mt-2 text-stone-950">{formatDate(record.updated_at)}</dd>
           </div>
         </dl>
       </article>
