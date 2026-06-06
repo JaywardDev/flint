@@ -35,7 +35,11 @@ export default async function RecordsPage() {
         </div>
 
         {records.length > 0 ? (
-          <RecordList records={records} labelledBy="records-heading" />
+          <RecordList
+            records={records}
+            labelledBy="records-heading"
+            showActions
+          />
         ) : (
           <div className="rounded-xl border border-parchment-border bg-parchment-raised px-5 py-8 text-center">
             <p className="font-serif text-2xl text-obsidian">No records yet.</p>
