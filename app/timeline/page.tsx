@@ -2,76 +2,18 @@ import Link from "next/link";
 
 import { requireUser } from "@/lib/auth/server";
 import {
-  FLINT_RECORD_TYPE_LABELS,
-  RECORD_TYPE_DOT,
   groupFlintRecordsByEra,
   listFlintRecordsByYear,
 } from "@/lib/flint-records";
-import type {
-  FlintRecord,
-  FlintRecordType,
-  FlintSupabaseClient,
-} from "@/lib/flint-records";
+import type { FlintSupabaseClient } from "@/lib/flint-records";
 import { createClient } from "@/lib/supabase/server";
 
 import { AppHeader } from "../app-header";
 import { BottomNav } from "../bottom-nav";
+import { EraRail, UndatedMarkers } from "./timeline-markers";
 
 function countLabel(count: number) {
   return `${count} ${count === 1 ? "record" : "records"}`;
-}
-
-// Soft per-type pill tints for the card badge. The neutral rail dot already
-// carries the type as a quiet hint; the badge restates it as a small, gentle
-// colour so the type is legible at a glance without shouting over the title.
-const RECORD_TYPE_BADGE: Record<FlintRecordType, string> = {
-  person: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  event: "border-sky-200 bg-sky-50 text-sky-800",
-  place: "border-rose-200 bg-rose-50 text-rose-800",
-  object: "border-amber-200 bg-amber-50 text-amber-800",
-  note: "border-parchment-border bg-parchment text-stone-warm",
-};
-
-// Shared card for both the year-rail rows and the Undated section. The type
-// dot is optional: in the year rail the centre rail already signals type, so
-// the badge drops its leading dot; in the Undated section there is no rail, so
-// the dot stays as the only extra type cue beside the pill.
-function RecordCard({
-  record,
-  className = "",
-  withTypeDot = false,
-}: {
-  record: FlintRecord;
-  className?: string;
-  withTypeDot?: boolean;
-}) {
-  return (
-    <article
-      className={`rounded-xl border border-parchment-border bg-parchment-raised transition hover:border-ember/60 ${className}`}
-    >
-      <Link href={`/records/${record.id}`} className="block p-5">
-        <h3 className="font-serif text-xl font-medium text-obsidian">
-          {record.title}
-        </h3>
-        {record.where ? (
-          <p className="mt-1 text-sm text-stone-soft">{record.where}</p>
-        ) : null}
-        <p className="mt-3 flex items-center gap-2">
-          {withTypeDot ? (
-            <span
-              aria-hidden
-              className={`inline-block h-1.5 w-1.5 rounded-full ${RECORD_TYPE_DOT[record.type]}`}
-            />
-          ) : null}
-          <span
-            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${RECORD_TYPE_BADGE[record.type]}`}
-          >
-            {FLINT_RECORD_TYPE_LABELS[record.type]}
-          </span>
-        </p>
-      </Link>
-    </article>
-  );
 }
 
 export default async function TimelinePage() {
@@ -238,60 +180,9 @@ export default async function TimelinePage() {
                   </Link>
                 ) : isUndated ? (
                   // No chronological position to express, so no year rail.
-                  <div className="flex flex-col gap-3" aria-labelledby={headingId}>
-                    {group.records.map((record) => (
-                      <RecordCard key={record.id} record={record} withTypeDot />
-                    ))}
-                  </div>
+                  <UndatedMarkers records={group.records} />
                 ) : (
-                  <ol className="flex flex-col" aria-labelledby={headingId}>
-                    {group.records.map((record, index) => {
-                      const isFirst = index === 0;
-                      const isLast = index === group.records.length - 1;
-                      const yearLabel =
-                        record.start_year == null
-                          ? "—"
-                          : String(record.start_year);
-
-                      return (
-                        <li key={record.id} className="flex gap-3">
-                          {/* Year column: start year only, muted. */}
-                          <div className="w-12 shrink-0 pt-6 text-right text-xs tabular-nums text-stone-soft">
-                            {yearLabel}
-                          </div>
-
-                          {/* Centre rail: line above + dot + line below. The
-                              above/below split keeps the connector continuous
-                              through the dot's offset and the gap between cards,
-                              while leaving no line above the first dot or below
-                              the last. */}
-                          <div className="flex w-4 shrink-0 flex-col items-center">
-                            <span
-                              aria-hidden
-                              className={`h-6 w-[1.5px] ${
-                                isFirst ? "" : "bg-parchment-border"
-                              }`}
-                            />
-                            <span
-                              aria-hidden
-                              className={`h-2.5 w-2.5 shrink-0 rounded-full ${RECORD_TYPE_DOT[record.type]}`}
-                            />
-                            {!isLast ? (
-                              <span
-                                aria-hidden
-                                className="w-[1.5px] flex-1 bg-parchment-border"
-                              />
-                            ) : null}
-                          </div>
-
-                          <RecordCard
-                            record={record}
-                            className={`flex-1 ${isLast ? "" : "mb-4"}`}
-                          />
-                        </li>
-                      );
-                    })}
-                  </ol>
+                  <EraRail records={group.records} />
                 )}
               </section>
             );
