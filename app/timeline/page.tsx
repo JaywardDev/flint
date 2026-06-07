@@ -104,11 +104,18 @@ export default async function TimelinePage() {
             })}
           </div>
 
-          <div className="mt-2 flex justify-between text-xs text-stone-soft">
-            <span>3000 BCE</span>
-            <span>500 CE</span>
-            <span>1500</span>
-            <span>Now</span>
+          {/* The axis names the eras the segments above represent, in the same
+              left→right oldest-to-newest order as the bar. */}
+          <div className="mt-2 flex text-xs text-stone-soft">
+            {eraSegments.map((group) => (
+              <span
+                key={group.id}
+                title={group.label}
+                className="min-w-0 flex-1 truncate px-0.5 text-center first:pl-0 first:text-left last:pr-0 last:text-right"
+              >
+                {group.label}
+              </span>
+            ))}
           </div>
         </section>
 

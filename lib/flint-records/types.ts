@@ -31,7 +31,7 @@ export const RECORD_TYPE_DOT: Record<FlintRecordType, string> = {
   event: "bg-obsidian",
   place: "bg-stone-warm",
   object: "bg-stone-soft",
-  note: "bg-parchment-border",
+  note: "bg-[#b8a898]",
 };
 
 export interface FlintRecord {

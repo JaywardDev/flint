@@ -136,10 +136,15 @@ function TimelineMarker({
 }
 
 // Dated era: a compact vertical rail of markers, one thin row per record. The
+// dot rail is a centered spine: a three-column grid (year | spine | title) with
+// equal 1fr flanks, so the spine stays centered on the page. The muted start
+// year sits to the left of the spine for orientation and as a density cue
+// (clustered close years read as a dense stretch of history); the record title
+// sits to the right so you can see what a record is before deciding to open it
+// (the dot colour already carries the type). The title is capped with a max
+// width and truncated, which keeps the spine stable under any title length. The
 // connector line runs above and below each dot (omitted above the first and
-// below the last) so the rail stays continuous through the gaps. The muted
-// start year is kept beside each marker for orientation and as a density cue —
-// clustered close years visibly read as a dense stretch of history.
+// below the last) so the spine stays continuous through the gaps.
 export function EraRail({ records }: { records: FlintRecord[] }) {
   return (
     <ol className="flex flex-col">
@@ -152,12 +157,15 @@ export function EraRail({ records }: { records: FlintRecord[] }) {
             : formatFlintTimelineYear(record.start_year);
 
         return (
-          <li key={record.id} className="flex gap-3">
-            <div className="w-12 shrink-0 pt-2 text-right text-[11px] leading-none tabular-nums text-stone-soft">
+          <li
+            key={record.id}
+            className="grid grid-cols-[1fr_auto_1fr] items-stretch"
+          >
+            <div className="flex justify-end pr-4 pt-2 text-[11px] leading-none tabular-nums text-stone-soft">
               {yearLabel}
             </div>
 
-            <div className="flex w-4 shrink-0 flex-col items-center">
+            <div className="flex w-4 flex-col items-center">
               <span
                 aria-hidden
                 className={`h-2 w-px ${isFirst ? "" : "bg-parchment-border"}`}
@@ -166,6 +174,12 @@ export function EraRail({ records }: { records: FlintRecord[] }) {
               {!isLast ? (
                 <span aria-hidden className="h-4 w-px bg-parchment-border" />
               ) : null}
+            </div>
+
+            <div className="min-w-0 pl-4 pt-2">
+              <span className="block max-w-[12rem] truncate text-sm leading-none text-stone-warm">
+                {record.title}
+              </span>
             </div>
           </li>
         );
