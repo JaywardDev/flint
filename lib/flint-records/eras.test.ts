@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { groupFlintRecordsByEra, sortFlintRecordsForTimeline } from "./eras";
+import {
+  formatFlintTimelineYear,
+  groupFlintRecordsByEra,
+  sortFlintRecordsForTimeline,
+} from "./eras";
 import type { FlintRecord } from "./types";
 
 function record(
@@ -114,4 +118,52 @@ describe("Flint timeline ordering and grouping", () => {
       ["newer-undated", "older-undated"],
     );
   });
+
+  it("sorts mixed BCE and CE records by internal year", () => {
+    const records = [
+      record("476-ce", "476 CE", 476, 476, "2026-01-05T00:00:00.000Z"),
+      record("1-ce", "1 CE", 1, 1, "2026-01-04T00:00:00.000Z"),
+      record("1-bce", "1 BCE", 0, 0, "2026-01-03T00:00:00.000Z"),
+      record("44-bce", "44 BCE", -43, -43, "2026-01-02T00:00:00.000Z"),
+      record("500-bce", "500 BCE", -499, -499, "2026-01-01T00:00:00.000Z"),
+    ];
+
+    assert.deepEqual(
+      sortFlintRecordsForTimeline(records).map((item) => item.id),
+      ["500-bce", "44-bce", "1-bce", "1-ce", "476-ce"],
+    );
+  });
+
+  it("keeps BCE records dated and sorts crossing ranges by internal start year", () => {
+    const records = [
+      record("undated", "sometime", null, null, "2026-01-03T00:00:00.000Z"),
+      record("crossing", "300 BCE to 100 CE", -299, 100, "2026-01-02T00:00:00.000Z"),
+      record("older", "500 BCE to 300 BCE", -499, -299, "2026-01-01T00:00:00.000Z"),
+    ];
+
+    const sorted = sortFlintRecordsForTimeline(records);
+    assert.deepEqual(
+      sorted.map((item) => item.id),
+      ["older", "crossing", "undated"],
+    );
+
+    const groups = groupFlintRecordsByEra(sorted);
+    const ancient = groups.find((group) => group.id === "ancient");
+    const undated = groups.find((group) => group.id === "undated");
+
+    assert.deepEqual(
+      ancient?.records.map((item) => item.id),
+      ["older", "crossing"],
+    );
+    assert.deepEqual(undated?.records.map((item) => item.id), ["undated"]);
+  });
+
+  it("formats timeline rail years without exposing zero or negative internals", () => {
+    assert.equal(formatFlintTimelineYear(0), "1 BCE");
+    assert.equal(formatFlintTimelineYear(-1), "2 BCE");
+    assert.equal(formatFlintTimelineYear(-43), "44 BCE");
+    assert.equal(formatFlintTimelineYear(1), "1");
+    assert.equal(formatFlintTimelineYear(476), "476");
+  });
+
 });

@@ -56,6 +56,11 @@ export const FLINT_ERAS: readonly FlintEra[] = [
 
 export type FlintEraId = (typeof FLINT_ERAS)[number]["id"] | "undated";
 
+export function formatFlintTimelineYear(year: number): string {
+  if (year <= 0) return `${1 - year} BCE`;
+  return String(year);
+}
+
 /**
  * Sort records for the Timeline lens: parsed numeric years first, unparseable
  * records last by newest created_at fallback.
