@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   createFlintRecord,
   deleteFlintRecord,
+  listFlintRecordsByYear,
   searchFlintRecords,
   updateFlintRecord,
   type FlintSupabaseClient,
@@ -17,6 +18,12 @@ import type {
 
 type RecordInsert = CreateFlintRecordInput & { user_id: string };
 type RecordUpdate = UpdateFlintRecordInput;
+type Order = {
+  column: keyof FlintRecord;
+  ascending: boolean;
+  nullsFirst?: boolean;
+};
+
 type Filter =
   | { column: keyof FlintRecord; operator: "eq"; value: string }
   | { column: keyof FlintRecord; operator: "gte" | "lte"; value: number };
@@ -24,6 +31,7 @@ type Filter =
 class FakeRecordsRequest implements PromiseLike<{ data: unknown; error: unknown }> {
   private filters: Filter[] = [];
   private searchTerm: string | null = null;
+  private orders: Order[] = [];
   private shouldReturnSingle = false;
   private readonly records: FlintRecord[];
   private readonly operation: "select" | "insert" | "update" | "delete";
@@ -68,7 +76,12 @@ class FakeRecordsRequest implements PromiseLike<{ data: unknown; error: unknown 
     return this;
   }
 
-  order() {
+  order(column: string, options: { ascending: boolean; nullsFirst?: boolean }) {
+    this.orders.push({
+      column: column as keyof FlintRecord,
+      ascending: options.ascending,
+      nullsFirst: options.nullsFirst,
+    });
     return this;
   }
 
@@ -116,15 +129,22 @@ class FakeRecordsRequest implements PromiseLike<{ data: unknown; error: unknown 
       return { data: null, error: null };
     }
 
-    const data = this.applyFilters(this.records)
-      .filter((record) => this.matchesSearchTerm(record))
-      .toSorted((a, b) => b.created_at.localeCompare(a.created_at));
+    const data = this.sortRecords(
+      this.applyFilters(this.records).filter((record) =>
+        this.matchesSearchTerm(record),
+      ),
+    );
 
-    return { data: this.shouldReturnSingle ? (data[0] ?? null) : data, error: null };
+    return {
+      data: this.shouldReturnSingle ? (data[0] ?? null) : data,
+      error: null,
+    };
   }
 
   private createRecord(values: RecordInsert): FlintRecord {
-    const now = new Date().toISOString();
+    const now = new Date(
+      Date.UTC(2026, 0, 1, 0, 0, this.records.length),
+    ).toISOString();
 
     return {
       id: `record-${this.records.length + 1}`,
@@ -152,6 +172,38 @@ class FakeRecordsRequest implements PromiseLike<{ data: unknown; error: unknown 
         return value <= filter.value;
       }),
     );
+  }
+
+  private sortRecords(records: FlintRecord[]) {
+    const orders = this.orders.length
+      ? this.orders
+      : [{ column: "created_at" as const, ascending: false }];
+
+    return records.toSorted((a, b) => {
+      for (const order of orders) {
+        const aValue = a[order.column];
+        const bValue = b[order.column];
+
+        if (aValue == null && bValue != null) {
+          return order.nullsFirst ? -1 : 1;
+        }
+        if (aValue != null && bValue == null) {
+          return order.nullsFirst ? 1 : -1;
+        }
+        if (aValue == null && bValue == null) continue;
+
+        const comparison =
+          typeof aValue === "number" && typeof bValue === "number"
+            ? aValue - bValue
+            : String(aValue).localeCompare(String(bValue));
+
+        if (comparison !== 0) {
+          return order.ascending ? comparison : -comparison;
+        }
+      }
+
+      return 0;
+    });
   }
 
   private matchesSearchTerm(record: FlintRecord) {
@@ -237,6 +289,48 @@ describe("Flint record year search", () => {
 
     assert.equal(updated.start_year, 1931);
     assert.equal(updated.end_year, 1970);
+  });
+
+  it("lists records in canonical timeline order with undated created_at fallback", async () => {
+    const supabase = new FakeFlintSupabaseClient();
+
+    await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "1925 exact",
+      when: "1925",
+    });
+    await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "1910s decade",
+      when: "1910s",
+    });
+    await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "Undated newer",
+      when: "sometime",
+    });
+    await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "Range",
+      when: "late 1800s to mid 1900s",
+    });
+    await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "Undated newest",
+    });
+
+    const records = await listFlintRecordsByYear(supabase, "user-1");
+
+    assert.deepEqual(
+      records.map((result) => result.title),
+      [
+        "Range",
+        "1910s decade",
+        "1925 exact",
+        "Undated newest",
+        "Undated newer",
+      ],
+    );
   });
 });
 

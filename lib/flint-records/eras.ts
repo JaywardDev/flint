@@ -17,14 +17,74 @@ export interface FlintEra {
 }
 
 export const FLINT_ERAS: readonly FlintEra[] = [
-  { id: "ancient", label: "Ancient world", rangeLabel: "before 500", min: -Infinity, max: 499 },
-  { id: "medieval", label: "Medieval", rangeLabel: "500–1399", min: 500, max: 1399 },
-  { id: "early-modern", label: "Early Modern", rangeLabel: "1400–1699", min: 1400, max: 1699 },
-  { id: "modern", label: "Modern", rangeLabel: "1700–1899", min: 1700, max: 1899 },
-  { id: "contemporary", label: "Contemporary", rangeLabel: "1900–present", min: 1900, max: Infinity },
+  {
+    id: "ancient",
+    label: "Ancient world",
+    rangeLabel: "before 500",
+    min: -Infinity,
+    max: 499,
+  },
+  {
+    id: "medieval",
+    label: "Medieval",
+    rangeLabel: "500–1399",
+    min: 500,
+    max: 1399,
+  },
+  {
+    id: "early-modern",
+    label: "Early Modern",
+    rangeLabel: "1400–1699",
+    min: 1400,
+    max: 1699,
+  },
+  {
+    id: "modern",
+    label: "Modern",
+    rangeLabel: "1700–1899",
+    min: 1700,
+    max: 1899,
+  },
+  {
+    id: "contemporary",
+    label: "Contemporary",
+    rangeLabel: "1900–present",
+    min: 1900,
+    max: Infinity,
+  },
 ];
 
 export type FlintEraId = (typeof FLINT_ERAS)[number]["id"] | "undated";
+
+/**
+ * Sort records for the Timeline lens: parsed numeric years first, unparseable
+ * records last by newest created_at fallback.
+ */
+export function compareFlintRecordsForTimeline(a: FlintRecord, b: FlintRecord) {
+  if (a.start_year == null && b.start_year != null) return 1;
+  if (a.start_year != null && b.start_year == null) return -1;
+
+  if (a.start_year != null && b.start_year != null) {
+    const startDifference = a.start_year - b.start_year;
+    if (startDifference !== 0) return startDifference;
+
+    const aEndYear = a.end_year ?? a.start_year;
+    const bEndYear = b.end_year ?? b.start_year;
+    const endDifference = aEndYear - bEndYear;
+    if (endDifference !== 0) return endDifference;
+  }
+
+  const createdDifference = b.created_at.localeCompare(a.created_at);
+  if (createdDifference !== 0) return createdDifference;
+
+  return a.id.localeCompare(b.id);
+}
+
+export function sortFlintRecordsForTimeline(
+  records: readonly FlintRecord[],
+): FlintRecord[] {
+  return [...records].sort(compareFlintRecordsForTimeline);
+}
 
 export interface FlintEraGroup {
   id: FlintEraId;
@@ -41,9 +101,11 @@ export interface FlintEraGroup {
  * group, which is only included when it has records.
  *
  * Records are bucketed by start_year only; input order is preserved within each
- * group (the selector already sorts by start_year ascending).
+ * group after the shared timeline sorter has established canonical order.
  */
-export function groupFlintRecordsByEra(records: FlintRecord[]): FlintEraGroup[] {
+export function groupFlintRecordsByEra(
+  records: readonly FlintRecord[],
+): FlintEraGroup[] {
   const groups: FlintEraGroup[] = FLINT_ERAS.map((era) => ({
     id: era.id,
     label: era.label,
@@ -70,7 +132,12 @@ export function groupFlintRecordsByEra(records: FlintRecord[]): FlintEraGroup[] 
   }
 
   if (undated.length > 0) {
-    groups.push({ id: "undated", label: "Undated", rangeLabel: null, records: undated });
+    groups.push({
+      id: "undated",
+      label: "Undated",
+      rangeLabel: null,
+      records: undated,
+    });
   }
 
   return groups;

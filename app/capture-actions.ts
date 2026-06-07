@@ -55,6 +55,7 @@ export async function createRecordAction(
   // Refresh notebook views without taking the user away from capture.
   revalidatePath("/records");
   revalidatePath("/search");
+  revalidatePath("/timeline");
 
   return { status: "saved", id: record.id, nonce: Date.now() };
 }
