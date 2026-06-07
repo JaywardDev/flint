@@ -49,6 +49,7 @@ export async function updateRecordAction(recordId: string, formData: FormData) {
 
   revalidatePath("/records");
   revalidatePath("/search");
+  revalidatePath("/timeline");
   revalidatePath(`/records/${recordId}`);
 
   redirect(`/records/${recordId}`);
@@ -67,6 +68,7 @@ export async function deleteRecordAction(recordId: string) {
 
   revalidatePath("/records");
   revalidatePath("/search");
+  revalidatePath("/timeline");
   revalidatePath(`/records/${recordId}`);
 
   return { status: "deleted" as const };

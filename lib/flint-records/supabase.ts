@@ -3,6 +3,7 @@ import type {
   FlintRecord,
   UpdateFlintRecordInput,
 } from "./types";
+import { sortFlintRecordsForTimeline } from "./eras";
 import { parseFlintYearRange } from "./time";
 
 interface FlintSupabaseResult {
@@ -168,7 +169,7 @@ export async function listFlintRecordsByYear(
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return data as FlintRecord[];
+  return sortFlintRecordsForTimeline(data as FlintRecord[]);
 }
 
 export async function searchFlintRecords(
