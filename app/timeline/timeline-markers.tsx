@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { RECORD_TYPE_DOT } from "@/lib/flint-records";
+import { formatFlintTimelineYear, RECORD_TYPE_DOT } from "@/lib/flint-records";
 import type { FlintRecord } from "@/lib/flint-records";
 
 // Opening one marker closes every other one — even across separate era rails —
@@ -147,7 +147,9 @@ export function EraRail({ records }: { records: FlintRecord[] }) {
         const isFirst = index === 0;
         const isLast = index === records.length - 1;
         const yearLabel =
-          record.start_year == null ? "—" : String(record.start_year);
+          record.start_year == null
+            ? "—"
+            : formatFlintTimelineYear(record.start_year);
 
         return (
           <li key={record.id} className="flex gap-3">

@@ -291,6 +291,69 @@ describe("Flint record year search", () => {
     assert.equal(updated.end_year, 1970);
   });
 
+  it("derives BCE internal years on create", async () => {
+    const supabase = new FakeFlintSupabaseClient();
+    const record = await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "BCE record",
+      when: "44 BCE",
+    });
+
+    assert.equal(record.when, "44 BCE");
+    assert.equal(record.start_year, -43);
+    assert.equal(record.end_year, -43);
+  });
+
+  it("recomputes BCE and CE years on update and clears unparseable updates", async () => {
+    const supabase = new FakeFlintSupabaseClient();
+    const record = await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "Era update record",
+      when: "44 BCE",
+    });
+
+    const ceUpdated = await updateFlintRecord(supabase, "user-1", record.id, {
+      when: "476 CE",
+    });
+    assert.equal(ceUpdated.start_year, 476);
+    assert.equal(ceUpdated.end_year, 476);
+
+    const cleared = await updateFlintRecord(supabase, "user-1", record.id, {
+      when: null,
+    });
+    assert.equal(cleared.start_year, null);
+    assert.equal(cleared.end_year, null);
+
+    const unparseable = await updateFlintRecord(supabase, "user-1", record.id, {
+      when: "around 300 BCE",
+    });
+    assert.equal(unparseable.start_year, null);
+    assert.equal(unparseable.end_year, null);
+  });
+
+  it("searches BCE ranges by numeric overlap without conflating BCE and CE", async () => {
+    const supabase = new FakeFlintSupabaseClient();
+    const rangeRecord = await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "Range record",
+      when: "500 BCE to 300 BCE",
+    });
+    await createFlintRecord(supabase, "user-1", {
+      type: "event",
+      title: "Unrelated CE record",
+      when: "44 CE",
+    });
+
+    const rangeResults = await searchFlintRecords(supabase, "user-1", "400 BCE");
+    assert.deepEqual(
+      rangeResults.map((result) => result.id),
+      [rangeRecord.id],
+    );
+
+    const bceResults = await searchFlintRecords(supabase, "user-1", "44 BCE");
+    assert.deepEqual(bceResults.map((result) => result.id), []);
+  });
+
   it("lists records in canonical timeline order with undated created_at fallback", async () => {
     const supabase = new FakeFlintSupabaseClient();
 
