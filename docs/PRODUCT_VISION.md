@@ -1,6 +1,6 @@
 # Flint — Product Vision & Architecture Doctrine
 
-> This document describes long-term product direction. For current implementation, `docs/FLINT_V1_DOCTRINE.md` is authoritative.
+> This document describes long-term product direction. For current implementation, `docs/FLINT_V1_DOCTRINE.md` is authoritative. That doctrine now distinguishes completed V1 Core from approved post-V1 lightweight expansion.
 
 ## 1. Core Idea
 
@@ -389,6 +389,8 @@ Principle:
 
 Views are lenses, not separate products.
 
+For current implementation, `/timeline` and `/sparks` may exist only as post-V1 lightweight secondary views under `docs/FLINT_V1_DOCTRINE.md`. They must derive from existing records and must not introduce heavy architecture or new required capture fields.
+
 Flint should avoid making Timeline, Map, Graph, and Story feel like equal top-level modes.
 
 The record is the center.
@@ -468,6 +470,8 @@ Avoid making the user choose a “mode” before they know what they want to exp
 ---
 
 ## 13. MVP Scope
+
+Historical note: this section describes the long-term MVP shape from the product vision. The stricter implementation authority is `docs/FLINT_V1_DOCTRINE.md`, which now treats V1 Core as complete and permits only lightweight post-V1 secondary views unless a later doctrine change explicitly approves more.
 
 The simplest MVP that preserves the long-term vision:
 
