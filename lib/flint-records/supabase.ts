@@ -15,7 +15,10 @@ interface FlintRecordsRequest extends PromiseLike<FlintSupabaseResult> {
   gte(column: string, value: string | number): FlintRecordsRequest;
   lte(column: string, value: string | number): FlintRecordsRequest;
   or(query: string): FlintRecordsRequest;
-  order(column: string, options: { ascending: boolean }): FlintRecordsRequest;
+  order(
+    column: string,
+    options: { ascending: boolean; nullsFirst?: boolean },
+  ): FlintRecordsRequest;
   select(columns?: string): FlintRecordsRequest;
   single(): PromiseLike<FlintSupabaseResult>;
 }
@@ -147,6 +150,21 @@ export async function listFlintRecords(
     .from("records")
     .select(RECORD_COLUMNS)
     .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data as FlintRecord[];
+}
+
+export async function listFlintRecordsByYear(
+  supabase: FlintSupabaseClient,
+  userId: string,
+): Promise<FlintRecord[]> {
+  const { data, error } = await supabase
+    .from("records")
+    .select(RECORD_COLUMNS)
+    .eq("user_id", userId)
+    .order("start_year", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
   if (error) throw error;

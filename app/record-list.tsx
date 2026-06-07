@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { FLINT_RECORD_TYPE_LABELS } from "@/lib/flint-records";
+import { FLINT_RECORD_TYPE_LABELS, RECORD_TYPE_DOT } from "@/lib/flint-records";
 import type { FlintRecord } from "@/lib/flint-records";
 
 import { RecordCardMenu } from "./record-card-menu";
@@ -34,7 +34,11 @@ export function RecordList({
               href={`/records/${record.id}`}
               className="block p-5 pr-12"
             >
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-stone-warm">
+              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-stone-warm">
+                <span
+                  aria-hidden
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${RECORD_TYPE_DOT[record.type]}`}
+                />
                 {FLINT_RECORD_TYPE_LABELS[record.type]}
               </p>
               <h2 className="mt-2 font-serif text-xl text-obsidian">

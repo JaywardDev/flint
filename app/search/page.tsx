@@ -35,6 +35,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <AppHeader
         links={[
           { href: "/records", label: "Records" },
+          { href: "/timeline", label: "Timeline" },
+          { href: "/sparks", label: "Sparks" },
           { href: "/add", label: "Add" },
         ]}
       />

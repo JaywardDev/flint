@@ -21,6 +21,19 @@ export const FLINT_RECORD_TYPE_LABELS: Record<FlintRecordType, string> = {
   note: "Note",
 };
 
+/**
+ * Subtle per-type dot colours. Palette tokens only (see app/globals.css):
+ * ember for Person, then progressively quieter neutrals so the dot reads as a
+ * gentle hint rather than a category system competing with the title.
+ */
+export const RECORD_TYPE_DOT: Record<FlintRecordType, string> = {
+  person: "bg-ember",
+  event: "bg-obsidian",
+  place: "bg-stone-warm",
+  object: "bg-stone-soft",
+  note: "bg-parchment-border",
+};
+
 export interface FlintRecord {
   id: string;
   user_id: string;

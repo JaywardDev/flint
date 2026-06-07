@@ -13,6 +13,8 @@ export default async function AddPage() {
       <AppHeader
         links={[
           { href: "/records", label: "Records" },
+          { href: "/timeline", label: "Timeline" },
+          { href: "/sparks", label: "Sparks" },
           { href: "/search", label: "Search" },
         ]}
       />

@@ -18,6 +18,8 @@ export default async function RecordsPage() {
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pb-28 pt-10 sm:pb-10">
       <AppHeader
         links={[
+          { href: "/timeline", label: "Timeline" },
+          { href: "/sparks", label: "Sparks" },
           { href: "/add", label: "Add" },
           { href: "/search", label: "Search" },
         ]}
