@@ -2,17 +2,18 @@ import type { FlintRecord } from "./types";
 
 /**
  * Static era table for the Timeline view. Eras are derived from start_year in
- * plain TS — there is no era column in the database. Bounds are inclusive CE
- * years. BCE is not supported (start_year is constrained to >= 1), so anything
- * before 500 CE is lumped into a loose "Ancient world" bucket.
+ * plain TS — there is no era column in the database. Bounds are inclusive
+ * internal timeline years, where BCE years use astronomical numbering
+ * (1 BCE = 0, 2 BCE = -1). Anything before 500 CE is lumped into a loose
+ * "Ancient world" bucket.
  */
 export interface FlintEra {
   id: string;
   label: string;
   rangeLabel: string;
-  /** Inclusive lower bound, in CE years. */
+  /** Inclusive lower bound, in internal timeline years. */
   min: number;
-  /** Inclusive upper bound, in CE years. */
+  /** Inclusive upper bound, in internal timeline years. */
   max: number;
 }
 
@@ -61,21 +62,29 @@ export function formatFlintTimelineYear(year: number): string {
   return String(year);
 }
 
+export function getFlintTimelineDateLabel(record: FlintRecord): string {
+  const when = record.when?.trim();
+  if (when) return when;
+
+  if (record.start_year == null) return "—";
+  return formatFlintTimelineYear(record.start_year);
+}
+
 /**
- * Sort records for the Timeline lens: parsed numeric years first, unparseable
- * records last by newest created_at fallback.
+ * Sort records for the Timeline lens: parsed numeric years newest-to-oldest,
+ * unparseable records last by newest created_at fallback.
  */
 export function compareFlintRecordsForTimeline(a: FlintRecord, b: FlintRecord) {
   if (a.start_year == null && b.start_year != null) return 1;
   if (a.start_year != null && b.start_year == null) return -1;
 
   if (a.start_year != null && b.start_year != null) {
-    const startDifference = a.start_year - b.start_year;
+    const startDifference = b.start_year - a.start_year;
     if (startDifference !== 0) return startDifference;
 
     const aEndYear = a.end_year ?? a.start_year;
     const bEndYear = b.end_year ?? b.start_year;
-    const endDifference = aEndYear - bEndYear;
+    const endDifference = bEndYear - aEndYear;
     if (endDifference !== 0) return endDifference;
   }
 
@@ -101,12 +110,13 @@ export interface FlintEraGroup {
 
 /**
  * Group records into the static eras by start_year. The five eras are always
- * returned in chronological order (empty eras included, so the view can render
- * gap prompts). Records with a null start_year fall into a trailing "Undated"
- * group, which is only included when it has records.
+ * returned in chronological order (empty eras included, so the density bar can
+ * render oldest-to-newest). Records with a null start_year fall into a trailing
+ * "Undated" group, which is only included when it has records.
  *
  * Records are bucketed by start_year only; input order is preserved within each
- * group after the shared timeline sorter has established canonical order.
+ * group after the shared timeline sorter has established canonical
+ * newest-to-oldest record order.
  */
 export function groupFlintRecordsByEra(
   records: readonly FlintRecord[],
