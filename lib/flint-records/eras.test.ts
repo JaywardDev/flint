@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   formatFlintTimelineYear,
+  getFlintTimelineDateLabel,
   groupFlintRecordsByEra,
   sortFlintRecordsForTimeline,
 } from "./eras";
@@ -30,8 +31,28 @@ function record(
   };
 }
 
+function sortedGroups(records: FlintRecord[]) {
+  return groupFlintRecordsByEra(sortFlintRecordsForTimeline(records));
+}
+
 describe("Flint timeline ordering and grouping", () => {
-  it("sorts dated records by parsed numeric range, not when text or created date", () => {
+  it("keeps era sections newest-to-oldest for the rendered timeline list", () => {
+    const groups = sortedGroups([]);
+    const renderedEraIds = groups
+      .filter((group) => group.id !== "undated")
+      .map((group) => group.id)
+      .reverse();
+
+    assert.deepEqual(renderedEraIds, [
+      "contemporary",
+      "modern",
+      "early-modern",
+      "medieval",
+      "ancient",
+    ]);
+  });
+
+  it("sorts dated records by parsed numeric range newest-to-oldest, not when text or created date", () => {
     const records = [
       record(
         "recently-created-old-range",
@@ -66,10 +87,10 @@ describe("Flint timeline ordering and grouping", () => {
     assert.deepEqual(
       sortFlintRecordsForTimeline(records).map((item) => item.id),
       [
-        "recently-created-old-range",
-        "early-century",
-        "decade",
         "later-exact-year",
+        "decade",
+        "early-century",
+        "recently-created-old-range",
       ],
     );
   });
@@ -119,7 +140,7 @@ describe("Flint timeline ordering and grouping", () => {
     );
   });
 
-  it("sorts mixed BCE and CE records by internal year", () => {
+  it("sorts mixed BCE and CE records newest-to-oldest by internal year", () => {
     const records = [
       record("476-ce", "476 CE", 476, 476, "2026-01-05T00:00:00.000Z"),
       record("1-ce", "1 CE", 1, 1, "2026-01-04T00:00:00.000Z"),
@@ -130,7 +151,7 @@ describe("Flint timeline ordering and grouping", () => {
 
     assert.deepEqual(
       sortFlintRecordsForTimeline(records).map((item) => item.id),
-      ["500-bce", "44-bce", "1-bce", "1-ce", "476-ce"],
+      ["476-ce", "1-ce", "1-bce", "44-bce", "500-bce"],
     );
   });
 
@@ -144,7 +165,7 @@ describe("Flint timeline ordering and grouping", () => {
     const sorted = sortFlintRecordsForTimeline(records);
     assert.deepEqual(
       sorted.map((item) => item.id),
-      ["older", "crossing", "undated"],
+      ["crossing", "older", "undated"],
     );
 
     const groups = groupFlintRecordsByEra(sorted);
@@ -153,9 +174,176 @@ describe("Flint timeline ordering and grouping", () => {
 
     assert.deepEqual(
       ancient?.records.map((item) => item.id),
-      ["older", "crossing"],
+      ["crossing", "older"],
     );
     assert.deepEqual(undated?.records.map((item) => item.id), ["undated"]);
+  });
+
+  it("sorts records inside each era newest-to-oldest", () => {
+    const groups = sortedGroups([
+      record("1914", "1914", 1914, 1914, "2026-01-01T00:00:00.000Z"),
+      record("1969", "1969", 1969, 1969, "2026-01-02T00:00:00.000Z"),
+      record("1939", "1939", 1939, 1939, "2026-01-03T00:00:00.000Z"),
+      record("1701", "1701", 1701, 1701, "2026-01-04T00:00:00.000Z"),
+      record("1899", "1899", 1899, 1899, "2026-01-05T00:00:00.000Z"),
+    ]);
+
+    assert.deepEqual(
+      groups
+        .find((group) => group.id === "contemporary")
+        ?.records.map((item) => item.id),
+      ["1969", "1939", "1914"],
+    );
+    assert.deepEqual(
+      groups
+        .find((group) => group.id === "modern")
+        ?.records.map((item) => item.id),
+      ["1899", "1701"],
+    );
+  });
+
+  it("orders the Contemporary example with 1969 before 1914", () => {
+    const groups = sortedGroups([
+      record("wwi", "1914", 1914, 1918, "2026-01-01T00:00:00.000Z"),
+      record(
+        "great-depression",
+        "1929",
+        1929,
+        1939,
+        "2026-01-02T00:00:00.000Z",
+      ),
+      record("wwii", "1939", 1939, 1945, "2026-01-03T00:00:00.000Z"),
+      record("eniac", "1946", 1946, 1946, "2026-01-04T00:00:00.000Z"),
+      record(
+        "apollo-program",
+        "1961",
+        1961,
+        1972,
+        "2026-01-05T00:00:00.000Z",
+      ),
+      record(
+        "moon-landing",
+        "1969",
+        1969,
+        1969,
+        "2026-01-06T00:00:00.000Z",
+      ),
+    ]);
+
+    assert.deepEqual(
+      groups
+        .find((group) => group.id === "contemporary")
+        ?.records.map((item) => item.id),
+      [
+        "moon-landing",
+        "apollo-program",
+        "eniac",
+        "wwii",
+        "great-depression",
+        "wwi",
+      ],
+    );
+  });
+
+  it("orders the Ancient World example with 476 before 27 BCE before 2500 BCE", () => {
+    const groups = sortedGroups([
+      record(
+        "abacus",
+        "2500 BCE",
+        -2499,
+        -2499,
+        "2026-01-01T00:00:00.000Z",
+      ),
+      record(
+        "roman-empire-rise",
+        "27 BCE",
+        -26,
+        -26,
+        "2026-01-02T00:00:00.000Z",
+      ),
+      record(
+        "roman-empire-fall",
+        "476",
+        476,
+        476,
+        "2026-01-03T00:00:00.000Z",
+      ),
+    ]);
+
+    assert.deepEqual(
+      groups
+        .find((group) => group.id === "ancient")
+        ?.records.map((item) => item.id),
+      ["roman-empire-fall", "roman-empire-rise", "abacus"],
+    );
+  });
+
+  it("uses the original when text as the visible label while sorting by start_year", () => {
+    const fuzzy = record(
+      "fuzzy",
+      "late 1800s",
+      1871,
+      1899,
+      "2026-01-01T00:00:00.000Z",
+    );
+    const later = record(
+      "later",
+      "1901",
+      1901,
+      1901,
+      "2026-01-02T00:00:00.000Z",
+    );
+
+    assert.deepEqual(
+      sortFlintRecordsForTimeline([fuzzy, later]).map((item) => item.id),
+      ["later", "fuzzy"],
+    );
+    assert.equal(getFlintTimelineDateLabel(fuzzy), "late 1800s");
+  });
+
+  it("uses original range when text as the visible label while sorting by start_year", () => {
+    const range = record(
+      "range",
+      "late 1800s to mid 1900s",
+      1871,
+      1970,
+      "2026-01-01T00:00:00.000Z",
+    );
+    const later = record(
+      "later",
+      "1901",
+      1901,
+      1901,
+      "2026-01-02T00:00:00.000Z",
+    );
+
+    assert.deepEqual(
+      sortFlintRecordsForTimeline([range, later]).map((item) => item.id),
+      ["later", "range"],
+    );
+    assert.equal(getFlintTimelineDateLabel(range), "late 1800s to mid 1900s");
+  });
+
+  it("displays BCE labels without exposing internal numeric years", () => {
+    const withWhen = record(
+      "with-when",
+      "2500 BCE",
+      -2499,
+      -2499,
+      "2026-01-01T00:00:00.000Z",
+    );
+    const withoutWhen = record(
+      "without-when",
+      null,
+      -2499,
+      -2499,
+      "2026-01-02T00:00:00.000Z",
+    );
+
+    assert.equal(getFlintTimelineDateLabel(withWhen), "2500 BCE");
+    assert.equal(getFlintTimelineDateLabel(withoutWhen), "2500 BCE");
+    assert.notEqual(getFlintTimelineDateLabel(withWhen), "-2499");
+    assert.notEqual(getFlintTimelineDateLabel(withoutWhen), "-2499");
   });
 
   it("formats timeline rail years without exposing zero or negative internals", () => {
@@ -165,5 +353,4 @@ describe("Flint timeline ordering and grouping", () => {
     assert.equal(formatFlintTimelineYear(1), "1");
     assert.equal(formatFlintTimelineYear(476), "476");
   });
-
 });

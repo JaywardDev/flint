@@ -387,9 +387,9 @@ describe("Flint record year search", () => {
     assert.deepEqual(
       records.map((result) => result.title),
       [
-        "Range",
-        "1910s decade",
         "1925 exact",
+        "1910s decade",
+        "Range",
         "Undated newest",
         "Undated newer",
       ],
