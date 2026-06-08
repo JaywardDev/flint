@@ -23,6 +23,7 @@ export default async function HomePage() {
         links={[
           { href: "/records", label: "Records" },
           { href: "/timeline", label: "Timeline" },
+          { href: "/spark", label: "Spark" },
           { href: "/sparks", label: "Sparks" },
           { href: "/search", label: "Search" },
         ]}

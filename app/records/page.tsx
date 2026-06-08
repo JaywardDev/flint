@@ -19,6 +19,7 @@ export default async function RecordsPage() {
       <AppHeader
         links={[
           { href: "/timeline", label: "Timeline" },
+          { href: "/spark", label: "Spark" },
           { href: "/sparks", label: "Sparks" },
           { href: "/add", label: "Add" },
           { href: "/search", label: "Search" },

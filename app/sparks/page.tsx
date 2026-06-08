@@ -13,6 +13,7 @@ export default async function SparksPage() {
           links={[
             { href: "/records", label: "Records" },
             { href: "/timeline", label: "Timeline" },
+            { href: "/spark", label: "Spark" },
             { href: "/add", label: "Add" },
             { href: "/search", label: "Search" },
           ]}
