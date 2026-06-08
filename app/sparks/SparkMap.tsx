@@ -44,7 +44,7 @@ type SparkMapProps = {
   selectedId: string | null;
   hoverId: string | null;
   onSelect: (id: string | null) => void;
-  onHover: (id: string | null) => void;
+  onHover: (id: string | null, point?: { x: number; y: number }) => void;
 };
 
 export function SparkMap({
@@ -226,7 +226,7 @@ function SparkRecord({
   isSelected: boolean;
   isHovered: boolean;
   onSelect: (id: string | null) => void;
-  onHover: (id: string | null) => void;
+  onHover: (id: string | null, point?: { x: number; y: number }) => void;
 }) {
   const fill = SPARK_TYPE_COLOR[item.type];
   const barWidth = item.x2 - item.x1;
@@ -259,7 +259,9 @@ function SparkRecord({
         event.stopPropagation();
         onSelect(item.id);
       }}
-      onMouseEnter={() => onHover(item.id)}
+      onMouseEnter={(event) =>
+        onHover(item.id, { x: event.clientX, y: event.clientY })
+      }
       onMouseLeave={() => onHover(null)}
       onFocus={() => onHover(item.id)}
       onBlur={() => onHover(null)}

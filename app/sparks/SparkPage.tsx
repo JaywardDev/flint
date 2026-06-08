@@ -33,6 +33,11 @@ export function SparkPage({ records }: { records: FlintRecord[] }) {
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [tooltip, setTooltip] = useState<{
+    title: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const [width, setWidth] = useState(FALLBACK_WIDTH);
   const [height, setHeight] = useState(FALLBACK_HEIGHT);
 
@@ -76,6 +81,32 @@ export function SparkPage({ records }: { records: FlintRecord[] }) {
 
   const placedCount = layout.items.length;
 
+  // Hover drives both the SVG highlight (hoverId) and a floating title tooltip.
+  // The tooltip is a plain DOM node positioned relative to the map container,
+  // so we convert the cursor's viewport coordinates into container-local ones.
+  const handleHover = (
+    id: string | null,
+    point?: { x: number; y: number },
+  ) => {
+    setHoverId(id);
+
+    const node = containerRef.current;
+    if (id && point && node) {
+      const record = records.find((candidate) => candidate.id === id);
+      const rect = node.getBoundingClientRect();
+      if (record) {
+        setTooltip({
+          title: record.title,
+          x: point.x - rect.left,
+          y: point.y - rect.top,
+        });
+        return;
+      }
+    }
+
+    setTooltip(null);
+  };
+
   return (
     <>
       {/* Mobile: the map is desktop-only, so point people to a wider screen. */}
@@ -101,7 +132,7 @@ export function SparkPage({ records }: { records: FlintRecord[] }) {
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-serif text-3xl font-medium text-obsidian">
-              Spark
+              Sparks
             </h1>
             <p className="mt-1 text-sm text-stone-soft">
               {placedCount} {placedCount === 1 ? "record" : "records"} across
@@ -148,7 +179,7 @@ export function SparkPage({ records }: { records: FlintRecord[] }) {
               selectedId={selectedId}
               hoverId={hoverId}
               onSelect={setSelectedId}
-              onHover={setHoverId}
+              onHover={handleHover}
             />
           ) : (
             <div className="flex h-full min-h-64 items-center justify-center px-8 text-center">
@@ -164,6 +195,18 @@ export function SparkPage({ records }: { records: FlintRecord[] }) {
               record={selectedRecord}
               onClose={() => setSelectedId(null)}
             />
+          ) : null}
+
+          {/* Floating title tooltip. pointer-events-none keeps it clear of the
+              click-to-select hit area, so clicking still opens the panel. */}
+          {tooltip ? (
+            <div
+              role="tooltip"
+              className="pointer-events-none absolute z-20 max-w-xs truncate rounded-md border border-parchment-border bg-parchment-raised px-2 py-1 text-xs text-obsidian shadow-[0_4px_12px_rgba(26,26,29,0.12)]"
+              style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
+            >
+              {tooltip.title}
+            </div>
           ) : null}
         </div>
       </main>
