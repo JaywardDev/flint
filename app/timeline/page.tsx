@@ -49,7 +49,6 @@ export default async function TimelinePage() {
         <AppHeader
           links={[
             { href: "/records", label: "Records" },
-            { href: "/spark", label: "Spark" },
             { href: "/sparks", label: "Sparks" },
             { href: "/add", label: "Add" },
             { href: "/search", label: "Search" },

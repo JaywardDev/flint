@@ -17,51 +17,69 @@ import {
 const ERA_LABEL_BASELINE = 14;
 const TOP_PADDING = 30;
 const LANE_HEIGHT = 24;
-const AXIS_GAP = 24;
 const AXIS_BOTTOM_PADDING = 30;
+// The SVG fills the measured container, but never collapses below this.
+const MIN_HEIGHT = 400;
 
 const PARCHMENT_BORDER = "#DDD0BA";
 const STONE_SOFT = "#8A857D";
 const OBSIDIAN = "#1A1A1D";
 const EMBER = "#C79B45";
 
-// Rough advance width of the 12px Inter label glyphs; good enough to decide how
-// many characters fit before we have to truncate with an ellipsis.
-const LABEL_CHAR_WIDTH = 6.2;
-const MAX_LABEL_WIDTH = 180;
+// Label sizing: titles render at 10px, and we approximate the advance width of
+// each glyph at 6.5px to decide whether the full title fits. Labels are never
+// truncated — they either fit completely or are dropped entirely.
+const LABEL_FONT_SIZE = 10;
+const LABEL_CHAR_WIDTH = 6.5;
+// Small gap between a record's right edge and the start of its label.
+const LABEL_GAP = 4;
+// Minimum clearance the label must keep from the next record / SVG boundary.
+const LABEL_CLEARANCE = 8;
 
 type SparkMapProps = {
   layout: SparkLayout;
   mode: SparkZoomMode;
   width: number;
+  height: number;
   selectedId: string | null;
   hoverId: string | null;
   onSelect: (id: string | null) => void;
   onHover: (id: string | null) => void;
 };
 
-function truncateToWidth(text: string, maxWidth: number): string {
-  const maxChars = Math.floor(maxWidth / LABEL_CHAR_WIDTH);
-  if (maxChars <= 1) return "";
-  if (text.length <= maxChars) return text;
-  return `${text.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
-}
-
 export function SparkMap({
   layout,
   mode,
   width,
+  height,
   selectedId,
   hoverId,
   onSelect,
   onHover,
 }: SparkMapProps) {
-  const laneRows = Math.max(1, layout.laneCount);
-  const axisY = TOP_PADDING + laneRows * LANE_HEIGHT + AXIS_GAP;
-  const height = axisY + AXIS_BOTTOM_PADDING;
+  // The SVG fills the available vertical space (min 400px); the axis sits near
+  // the bottom of that space rather than at a height derived from lane count.
+  const svgHeight = Math.max(MIN_HEIGHT, height);
+  const axisY = svgHeight - AXIS_BOTTOM_PADDING;
 
   const laneCenterY = (lane: number) =>
     TOP_PADDING + lane * LANE_HEIGHT + LANE_HEIGHT / 2;
+
+  // For each record, the left edge of the next record in the same lane. Labels
+  // may only fill the gap up to this neighbour (or the SVG's right boundary).
+  const nextLaneX = new Map<string, number>();
+  const lanes = new Map<number, SparkLayoutItem[]>();
+  for (const item of layout.items) {
+    const bucket = lanes.get(item.lane) ?? [];
+    bucket.push(item);
+    lanes.set(item.lane, bucket);
+  }
+  for (const bucket of lanes.values()) {
+    bucket.sort((a, b) => a.x1 - b.x1);
+    for (let i = 0; i < bucket.length; i += 1) {
+      nextLaneX.set(bucket[i].id, bucket[i + 1]?.x1 ?? Infinity);
+    }
+  }
 
   const eraBands = sparkErasInView(mode);
 
@@ -74,8 +92,8 @@ export function SparkMap({
   return (
     <svg
       width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
+      height={svgHeight}
+      viewBox={`0 0 ${width} ${svgHeight}`}
       role="group"
       aria-label="Time map of your records across history"
       style={{ display: "block" }}
@@ -85,7 +103,7 @@ export function SparkMap({
         x={0}
         y={0}
         width={width}
-        height={height}
+        height={svgHeight}
         fill="transparent"
         onClick={() => onSelect(null)}
       />
@@ -180,6 +198,7 @@ export function SparkMap({
           item={item}
           cy={laneCenterY(item.lane)}
           width={width}
+          nextX={nextLaneX.get(item.id) ?? Infinity}
           isSelected={item.id === selectedId}
           isHovered={item.id === hoverId}
           onSelect={onSelect}
@@ -194,6 +213,7 @@ function SparkRecord({
   item,
   cy,
   width,
+  nextX,
   isSelected,
   isHovered,
   onSelect,
@@ -202,6 +222,7 @@ function SparkRecord({
   item: SparkLayoutItem;
   cy: number;
   width: number;
+  nextX: number;
   isSelected: boolean;
   isHovered: boolean;
   onSelect: (id: string | null) => void;
@@ -211,22 +232,22 @@ function SparkRecord({
   const barWidth = item.x2 - item.x1;
   const active = isSelected || isHovered;
 
-  // Labels are suppressed by default to keep dense stretches legible; a wide
-  // bar earns a standing label, and hover or selection always reveals one.
-  const showLabel =
-    isSelected || isHovered || (!item.isPoint && barWidth > 40);
-
   const strokeProps = isSelected
     ? { stroke: EMBER, strokeWidth: 2, strokeOpacity: 1 }
     : isHovered
       ? { stroke: EMBER, strokeWidth: 1.5, strokeOpacity: 0.6 }
       : { stroke: "none", strokeWidth: 0, strokeOpacity: 0 };
 
-  const labelX = item.isPoint
-    ? item.centerX + SPARK_POINT_RADIUS + 4
-    : item.x2 + 4;
-  const labelMaxWidth = Math.min(MAX_LABEL_WIDTH, width - labelX - 4);
-  const label = showLabel ? truncateToWidth(item.title, labelMaxWidth) : "";
+  // A label shows only when the full title fits in the space after the record's
+  // right edge, keeping at least 8px clear of the next record in the lane (or
+  // the SVG boundary). Otherwise it is dropped — the title lives in the panel.
+  const rightEdge = item.isPoint
+    ? item.centerX + SPARK_POINT_RADIUS
+    : item.x2;
+  const labelX = rightEdge + LABEL_GAP;
+  const boundary = Math.min(nextX, width);
+  const titleWidth = item.title.length * LABEL_CHAR_WIDTH;
+  const showLabel = labelX + titleWidth + LABEL_CLEARANCE <= boundary;
 
   return (
     <g
@@ -269,17 +290,17 @@ function SparkRecord({
         />
       )}
 
-      {label ? (
+      {showLabel ? (
         <text
           x={labelX}
           y={cy}
           dominantBaseline="central"
-          fontSize={12}
+          fontSize={LABEL_FONT_SIZE}
           fontWeight={isSelected ? 600 : 400}
           fill={OBSIDIAN}
           pointerEvents="none"
         >
-          {label}
+          {item.title}
         </text>
       ) : null}
     </g>

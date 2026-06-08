@@ -16,6 +16,7 @@ import {
 } from "./useSparkScale";
 
 const FALLBACK_WIDTH = 1100;
+const FALLBACK_HEIGHT = 600;
 
 /**
  * Page-level orchestrator for the Spark Time Map. Owns every piece of UI state —
@@ -33,19 +34,21 @@ export function SparkPage({ records }: { records: FlintRecord[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [width, setWidth] = useState(FALLBACK_WIDTH);
+  const [height, setHeight] = useState(FALLBACK_HEIGHT);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Track the live width of the map column so the compression scale always
-  // fills exactly the available pixels. A zero width (e.g. while the desktop
-  // block is hidden on mobile) is ignored so we keep the last good value.
+  // Track the live size of the map column so the compression scale fills the
+  // available pixels horizontally and the SVG fills the column vertically. A
+  // zero dimension (e.g. while the desktop block is hidden on mobile) is
+  // ignored so we keep the last good value.
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
 
     const measure = () => {
-      const next = node.clientWidth;
-      if (next > 0) setWidth(next);
+      if (node.clientWidth > 0) setWidth(node.clientWidth);
+      if (node.clientHeight > 0) setHeight(node.clientHeight);
     };
 
     measure();
@@ -141,6 +144,7 @@ export function SparkPage({ records }: { records: FlintRecord[] }) {
               layout={layout}
               mode={mode}
               width={Math.max(0, width - 16)}
+              height={Math.max(0, height - 16)}
               selectedId={selectedId}
               hoverId={hoverId}
               onSelect={setSelectedId}

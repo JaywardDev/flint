@@ -36,7 +36,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         links={[
           { href: "/records", label: "Records" },
           { href: "/timeline", label: "Timeline" },
-          { href: "/spark", label: "Spark" },
           { href: "/sparks", label: "Sparks" },
           { href: "/add", label: "Add" },
         ]}

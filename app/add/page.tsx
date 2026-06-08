@@ -14,7 +14,6 @@ export default async function AddPage() {
         links={[
           { href: "/records", label: "Records" },
           { href: "/timeline", label: "Timeline" },
-          { href: "/spark", label: "Spark" },
           { href: "/sparks", label: "Sparks" },
           { href: "/search", label: "Search" },
         ]}
